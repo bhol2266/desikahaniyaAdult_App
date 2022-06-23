@@ -192,6 +192,7 @@ public class AudioPlayer extends AppCompatActivity {
                 loadingMessage.setTextColor(Color.parseColor("#FF0000"));
                 loadingMessage.setTextSize(20);
                 progressbarUnit.setVisibility(View.GONE);
+                mp.stop();
 
                 return false;
             }
@@ -414,7 +415,7 @@ public class AudioPlayer extends AppCompatActivity {
         super.onBackPressed();
         try {
             loadAds();
-            handler.removeCallbacks(runnable);
+            handler.removeCallbacks(runnable); // Seekbar handler
             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                 Toast.makeText(AudioPlayer.this, "Stopped", Toast.LENGTH_SHORT).show();
             }

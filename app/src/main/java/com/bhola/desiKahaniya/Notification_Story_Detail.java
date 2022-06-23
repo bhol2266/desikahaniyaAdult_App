@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -140,9 +141,7 @@ public class Notification_Story_Detail extends AppCompatActivity {
         FirebaseData firebaseData = collectonData.get(position);
         holder.title.setText(firebaseData.getTitle());
         holder.date.setText(firebaseData.getDate());
-        holder.heading.setText(firebaseData.getHeading());
-        String indexx=String.valueOf(position+1);
-        holder.index.setText(indexx);
+
 
         holder.recyclerview.setOnClickListener(v -> {
             Intent intent=new Intent(v.getContext(),Notification_StoryPage.class);
@@ -164,7 +163,7 @@ public class Notification_Story_Detail extends AppCompatActivity {
     public static class viewholder extends RecyclerView.ViewHolder {
         TextView title;
         TextView index,heading,date;
-        RelativeLayout recyclerview;
+        LinearLayout recyclerview;
 
 
         public viewholder(@NonNull View itemView) {

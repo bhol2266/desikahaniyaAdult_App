@@ -198,9 +198,7 @@ public class Download_Detail extends AppCompatActivity {
         ModelData_forFavourites modelData_forFavourites = collectonData.get(position);
         holder.title.setText(modelData_forFavourites.getTitle());
         holder.date.setText(modelData_forFavourites.getDate());
-        holder.heading.setText(modelData_forFavourites.getHeading());
-        String indexx = String.valueOf(position + 1);
-        holder.index.setText(indexx);
+
 
 
         holder.recyclerview.setOnLongClickListener(new View.OnLongClickListener() {
@@ -288,7 +286,7 @@ public class Download_Detail extends AppCompatActivity {
     public class viewholder extends RecyclerView.ViewHolder {
         TextView title;
         TextView index, heading, date;
-        RelativeLayout recyclerview;
+        LinearLayout recyclerview;
 
 
         public viewholder(@NonNull View itemView) {
