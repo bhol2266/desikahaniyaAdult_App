@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<soup.neumorphism.NeumorphCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+   >
+
+    <RelativeLayout
+        android:id="@+id/recyclerviewLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:background="@drawable/hooverffext"
+        android:paddingTop="5dp">
+
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardview"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="10dp"
+            app:cardCornerRadius="30dp"
+            android:background="#55FFFFFF"
+            android:layout_marginBottom="5dp">
+
+
+            <ImageView
+                android:id="@+id/imageview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                app:srcCompat="@drawable/love_book" />
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/titlee"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="5dp"
+            android:layout_toRightOf="@+id/cardview"
+            android:fontFamily="@font/rajdhani_regular"
+            android:text="Title"
+            android:textColor="@color/semi_black"
+            android:textFontWeight="700"
+            android:textSize="20sp"
+            android:maxLines="1"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/addedon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/titlee"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@+id/cardview"
+
+            android:text="Added on"
+            android:textColor="@color/black"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/date_recyclerview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/titlee"
+            android:layout_marginLeft="5dp"
+
+            android:layout_toRightOf="@+id/addedon"
+            android:text="11-12-2020"
+            android:textColor="@color/black"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/index"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/titlee"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@+id/date_recyclerview"
+            android:text="Index"
+            android:textColor="@color/black"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/heading_recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="38sp"
+            android:layout_below="@+id/addedon"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
+            android:text="heading ggggggggggggggggggggggggggg ggggggggg gggg ggggggg gggggggggggggggg ggggggggggg gggg ggggggg"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/lock"
+
+            android:layout_width="match_parent"
+            android:layout_height="38sp"
+            android:layout_below="@+id/addedon"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="35sp"
+                android:layout_height="35sp"
+                android:layout_below="@+id/addedon"
+                android:layout_alignParentRight="true"
+                android:layout_marginLeft="5dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
+                android:padding="4dp"
+                android:scaleType="centerCrop"
+                app:srcCompat="@drawable/lock" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</soup.neumorphism.NeumorphCardView>
