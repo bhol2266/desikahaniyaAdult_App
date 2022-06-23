@@ -252,6 +252,11 @@ Collection_GridView extends AppCompatActivity {
                         drawerLayout.closeDrawer(GravityCompat.START);
                         break;
 
+                    case R.id.menu_audio:
+                        startActivity(new Intent(getApplicationContext(), OfflineAudioStory.class));
+                        drawerLayout.closeDrawer(GravityCompat.START);
+                        break;
+
                     case R.id.menu_contacts:
                         TextView whatsapp, email;
                         AlertDialog.Builder builder = new AlertDialog.Builder(Collection_GridView.this);

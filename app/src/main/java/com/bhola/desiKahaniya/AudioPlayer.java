@@ -1,16 +1,24 @@
 package com.bhola.desiKahaniya;
 
-
-import androidx.appcompat.app.AppCompatActivity;
-
-
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.DownloadManager;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -18,30 +26,60 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
+import com.google.android.material.snackbar.Snackbar;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 
 public class AudioPlayer extends AppCompatActivity {
     ImageView playBtn;
-    ProgressBar progressbar;
+    LinearLayout progressbar;
+    LinearLayout playBtn_and_SeekbarLayout;
+    TextView loadingMessage;
     MediaPlayer mediaPlayer;
     int pausePosition = -1;
     String storyURL, storyName;
-    int temp = 0;
     SeekBar seekbar;
     Runnable runnable;
     Handler handler;
     TextView currentTime, storyTitle;
     LottieAnimationView lottie;
+    ProgressBar progressbarUnit;
+    boolean URL_notWorking=false;
+
     // Ads Stuff
     AdView mAdView;
     RewardedInterstitialAd mRewardedVideoAd;
     com.facebook.ads.InterstitialAd facebook_IntertitialAds;
     com.facebook.ads.AdView facebook_adView;
-    final boolean[] isPlayingBoolean = {false};
+    final boolean[] isPlayingBoolean = {true};
+
+    //Story Download stuffs
+    DownloadManager manager;
+    private ProgressDialog mdialog;
+    public static final int progress_bar_type = 0;
+    AlertDialog dialog;
+    TextView description, progress_indicator;
+    Button cancelbtn;
+    ProgressBar progressbarDownload;
+    DownloadFileFromURL downloadTask;
+    TextView downloadSize;
+    CoordinatorLayout layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,42 +87,48 @@ public class AudioPlayer extends AppCompatActivity {
         setContentView(R.layout.activity_audio_player);
 
         loadAds();
+        downloadAudio();
 
         progressbar = findViewById(R.id.progressbar);
+        playBtn_and_SeekbarLayout = findViewById(R.id.playBtn_and_SeekbarLayout);
+        loadingMessage = findViewById(R.id.message);
         storyTitle = findViewById(R.id.storyTitle);
         currentTime = findViewById(R.id.currentTime);
         seekbar = findViewById(R.id.seekbar);
         playBtn = findViewById(R.id.playBtn);
         playBtn.setBackgroundResource(R.drawable.play);
+        progressbarUnit = findViewById(R.id.progressbarUnit);
         lottie = findViewById(R.id.lottie);
 
         storyURL = decryption(getIntent().getStringExtra("storyURL"));
         storyName = getIntent().getStringExtra("storyName");
         storyTitle.setText(storyName.replace("-", " ").trim());
 
-
         startPlayingAudio(); // This is the service class that will run in the background
 
-        playBtn.setOnClickListener(v -> {
+        playBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!mediaPlayer.isPlaying()) {  //  PLAY
+                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    mediaPlayer.seekTo(pausePosition - 500);
+                    mediaPlayer.start();
+                    playBtn.setBackgroundResource(R.drawable.pause);
+                    Toast.makeText(AudioPlayer.this, "Resumed", Toast.LENGTH_SHORT).show();
+                    isPlayingBoolean[0] = true;
 
-            if (!mediaPlayer.isPlaying()) {  //  PLAY
-                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                mediaPlayer.seekTo(pausePosition - 500);
-                mediaPlayer.start();
-                playBtn.setBackgroundResource(R.drawable.pause);
-                Toast.makeText(AudioPlayer.this, "Resumed", Toast.LENGTH_SHORT).show();
-                isPlayingBoolean[0] = true;
+                } else if (mediaPlayer.isPlaying()) { //   PAUSE
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    loadAds();
+                    mediaPlayer.pause();
+                    playBtn.setBackgroundResource(R.drawable.play);
+                    pausePosition = mediaPlayer.getCurrentPosition();
+                    playBtn.setBackgroundResource(R.drawable.play);
+                    Toast.makeText(AudioPlayer.this, "Paused", Toast.LENGTH_SHORT).show();
+                    isPlayingBoolean[0] = false;
+                    lottie.setVisibility(View.INVISIBLE);
 
-            } else if (mediaPlayer.isPlaying()) { //   PAUSE
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                loadAds();
-                mediaPlayer.pause();
-                playBtn.setBackgroundResource(R.drawable.play);
-                pausePosition = mediaPlayer.getCurrentPosition();
-                playBtn.setBackgroundResource(R.drawable.play);
-                Toast.makeText(AudioPlayer.this, "Paused", Toast.LENGTH_SHORT).show();
-                isPlayingBoolean[0] = false;
-                lottie.setVisibility(View.INVISIBLE);
+                }
 
             }
         });
@@ -92,8 +136,10 @@ public class AudioPlayer extends AppCompatActivity {
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
                 if (fromUser) {
                     progressbar.setVisibility(View.VISIBLE);
+                    progressbarUnit.setVisibility(View.VISIBLE);
                     lottie.setVisibility(View.INVISIBLE);
                     seekBar.setProgress(progress);
                     mediaPlayer.seekTo(progress);
@@ -112,30 +158,66 @@ public class AudioPlayer extends AppCompatActivity {
             }
         });
 
-        mediaPlayer.setOnCompletionListener(mp -> {
-            playBtn.setBackgroundResource(R.drawable.play);
-            Toast.makeText(AudioPlayer.this, "Finished", Toast.LENGTH_SHORT).show();
-            try {
-                onBackPressed();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+
 
         mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
             @Override
             public void onBufferingUpdate(MediaPlayer mp, int percent) {
-                if (isPlayingBoolean[0]) {
+                if (percent >= 5) {
+                    if (isPlayingBoolean[0]) {
+                        mp.start();
+                        lottie.setVisibility(View.VISIBLE);
+                        progressbarUnit.setVisibility(View.GONE);
+                    }
+                    playBtn_and_SeekbarLayout.setVisibility(View.VISIBLE);
+                }
+
+                loadingMessage.setText(Integer.toString(percent) + "% buffered");
+
+                if (percent == 100) {
                     progressbar.setVisibility(View.INVISIBLE);
-                    lottie.setVisibility(View.VISIBLE);
+                } else {
+                    progressbar.setVisibility(View.VISIBLE);
+
                 }
             }
         });
+
+        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @SuppressLint("ResourceAsColor")
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                URL_notWorking=true;
+                loadingMessage.setText("Audio link not working, Please try another story");
+                loadingMessage.setTextColor(Color.parseColor("#FF0000"));
+                loadingMessage.setTextSize(20);
+                progressbarUnit.setVisibility(View.GONE);
+
+                return false;
+            }
+        });
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                playBtn.setBackgroundResource(R.drawable.play);
+                if(!URL_notWorking){
+                    Toast.makeText(AudioPlayer.this, "Finished", Toast.LENGTH_SHORT).show();
+                    try {
+                        onBackPressed();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+
     }
+
 
     private void startPlayingAudio() {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        seekbar.setVisibility(View.GONE);
         try {
             if (mediaPlayer == null) {
                 mediaPlayer = new MediaPlayer();
@@ -144,36 +226,34 @@ public class AudioPlayer extends AppCompatActivity {
                 mediaPlayer.reset();
                 mediaPlayer.setDataSource(storyURL);
                 mediaPlayer.prepareAsync();
-                mediaPlayer.setOnPreparedListener(mp -> {
-                    try {
-                        seekbar.setMax(mediaPlayer.getDuration());
-                        updateSeekbar();
-                        mediaPlayer.start();
-                        seekbar.setVisibility(View.VISIBLE);
+                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        try {
+                            seekbar.setMax(mediaPlayer.getDuration());
+                            updateSeekbar();
+                            setCurrentTime();
+                            Toast.makeText(AudioPlayer.this, "Playing", Toast.LENGTH_SHORT).show();
 
-                        setCurrentTime();
-                        isPlayingBoolean[0] = true;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
 
                 });
 
 
-                Toast.makeText(AudioPlayer.this, "Playing", Toast.LENGTH_SHORT).show();
                 playBtn.setBackgroundResource(R.drawable.pause);
             }
-            temp = 1;
         } catch (Exception e) {
-            e.printStackTrace();
+            Toast.makeText(this, "LINK BROKEN", Toast.LENGTH_SHORT).show();
         }
     }
 
 
     private void loadAds() {
         if (SplashScreen.Ads_State.equals("active")) {
-            Log.d("loadAds", "loadAds: ");
             showAds();
         }
     }
@@ -252,6 +332,83 @@ public class AudioPlayer extends AppCompatActivity {
     }
 
 
+    private void downloadAudio() {
+        ImageView downloadBtn;
+        downloadBtn = findViewById(R.id.downloadBtn);
+        downloadBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                downloadDialog();
+                if (mediaPlayer.isPlaying()) {
+                    playBtn.performClick();
+                }
+                if (checkPermissions()) {
+                    ContextWrapper cw = new ContextWrapper(getApplicationContext());
+                    File directory = cw.getDir("Download", Context.MODE_PRIVATE);
+                    File file = new File(directory, storyName.replaceAll(" ", "_") + ".mp3");
+
+                    if (!file.exists()) {
+                        downloadTask = new DownloadFileFromURL();
+                        downloadTask.execute(storyURL);
+                    } else {
+                        final Snackbar snackbar = Snackbar.make(v, "", Snackbar.LENGTH_LONG);
+                        View customSnackView = getLayoutInflater().inflate(R.layout.custom_snackbar_view, null);
+                        // now change the layout of the snackbar
+                        Snackbar.SnackbarLayout snackbarLayout = (Snackbar.SnackbarLayout) snackbar.getView();
+
+                        TextView gotoDownloads = customSnackView.findViewById(R.id.gotoDownloads);
+                        gotoDownloads.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                startActivity(new Intent(AudioPlayer.this, OfflineAudioStory.class));
+                            }
+                        });
+
+                        // add the custom snack bar layout to snackbar layout
+                        snackbarLayout.addView(customSnackView, 0);
+                        snackbar.show();
+                    }
+
+                } else {
+                    requestPermissions();
+                }
+            }
+        });
+    }
+
+    public void requestPermissions() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Toast.makeText(AudioPlayer.this, "Please Give Permission to download file", Toast.LENGTH_SHORT).show();
+        } else {
+            ActivityCompat.requestPermissions(AudioPlayer.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+        }
+    }
+
+
+    private boolean checkPermissions() {
+        int result = ContextCompat.checkSelfPermission(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (result == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case 100:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                }
+        }
+    }
+
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -266,11 +423,10 @@ public class AudioPlayer extends AppCompatActivity {
                 mediaPlayer = null;
             }
         } catch (Exception e) {
-            Log.d("TAGA", "onBackPressed: "+e.getMessage());
+            Log.d("TAGA", "onBackPressed: " + e.getMessage());
         }
 
     }
-
 
 
     @Override
@@ -298,4 +454,134 @@ public class AudioPlayer extends AppCompatActivity {
     }
 
 
+    private void downloadDialog() {
+
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(AudioPlayer.this);
+        LayoutInflater inflater = LayoutInflater.from(getApplicationContext());
+        View promptView = inflater.inflate(R.layout.download_dialog, null);
+        builder.setView(promptView);
+        builder.setCancelable(false);
+
+        description = promptView.findViewById(R.id.description);
+        description.setText(storyName+".mp3 downloading...");
+        progress_indicator = promptView.findViewById(R.id.progress_indicator);
+        downloadSize = promptView.findViewById(R.id.downloadSize);
+        cancelbtn = promptView.findViewById(R.id.cancelbtn);
+        cancelbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(AudioPlayer.this, "Download Cancelled", Toast.LENGTH_SHORT).show();
+                dialog.cancel();
+                downloadTask.cancel(true);
+                ContextWrapper cw = new ContextWrapper(getApplicationContext());
+                File directory = cw.getDir("Download", Context.MODE_PRIVATE);
+                File file = new File(directory, storyName.replaceAll(" ", "_") + ".mp3");
+                if (file.exists()) {
+                    file.delete();
+                }
+            }
+        });
+
+        progressbarDownload = promptView.findViewById(R.id.seekbar);
+        dialog = builder.create();
+    }
+
+
+//Background Async Task to download story
+
+    class DownloadFileFromURL extends AsyncTask<String, String, String> {
+
+        int lenghtOfFile;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog.show();
+        }
+
+        /**
+         * Downloading file in background thread
+         */
+        @Override
+        protected String doInBackground(String... f_url) {
+            int count;
+            try {
+                URL url = new URL(f_url[0]);
+                URLConnection connection = url.openConnection();
+                connection.connect();
+
+                // this will be useful so that you can show a tipical 0-100%
+                // progress bar
+                lenghtOfFile = connection.getContentLength();
+
+
+                // download the file
+                InputStream input = new BufferedInputStream(url.openStream(),
+                        8192);
+                ContextWrapper cw = new ContextWrapper(getApplicationContext());
+                File directory = cw.getDir("Download", Context.MODE_PRIVATE);
+                File file = new File(directory, storyName.replaceAll(" ", "_") + ".mp3");
+
+
+                // Output stream
+                OutputStream output = new FileOutputStream(file);
+                byte data[] = new byte[1024];
+
+                long total = 0;
+
+                while ((count = input.read(data)) != -1) {
+                    total += count;
+                    // publishing the progress....
+                    // After this onProgressUpdate will be called
+                    publishProgress("" + (int) ((total * 100) / lenghtOfFile));
+
+                    // writing data to file
+                    output.write(data, 0, count);
+                }
+
+
+                // flushing output
+                output.flush();
+
+                // closing streams
+                output.close();
+                input.close();
+
+            } catch (Exception e) {
+                Log.e("Error: ", e.getMessage());
+            }
+
+            return null;
+        }
+
+        /**
+         * Updating progress bar
+         */
+        protected void onProgressUpdate(String... progress) {
+            if (mediaPlayer.isPlaying()) {
+                playBtn.performClick();
+            }
+            // setting progress percentage
+            progressbarDownload.setProgress(Integer.parseInt(progress[0]));
+            progress_indicator.setText(progress[0] + "%");
+            int fileSize_inMB = (lenghtOfFile / 1024) / 1024;
+            int progress_percent = Integer.parseInt(progress[0]);
+            int progress_inMB = progress_percent * fileSize_inMB;
+            downloadSize.setText("(" + progress_inMB / 100 + "MB/" + fileSize_inMB + "MB)");
+            downloadSize.setVisibility(View.VISIBLE);
+
+        }
+
+        /**
+         * After completing background task Dismiss the progress dialog
+         **/
+        @Override
+        protected void onPostExecute(String file_url) {
+            // dismiss the dialog after the file was downloaded
+            dialog.cancel();
+            Toast.makeText(AudioPlayer.this, "Download Completed", Toast.LENGTH_SHORT).show();
+
+        }
+    }
 }

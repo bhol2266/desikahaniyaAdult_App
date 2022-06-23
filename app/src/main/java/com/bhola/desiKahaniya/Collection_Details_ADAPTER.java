@@ -60,23 +60,8 @@ public class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerVie
 
         storyRowViewHolder.title.setText(firebaseData.getTitle());
         storyRowViewHolder.date.setText(firebaseData.getDate());
-        storyRowViewHolder.heading.setText(firebaseData.getHeading().toString());
-        String indexx = String.valueOf(position + 1);
-        storyRowViewHolder.index.setText(indexx);
 
-//                if(position>25 && SplashScreen.USER_TYPE.equals("FreeUser"))
-//                {
-////                    lock state
-//                    storyRowViewHolder.heading.setVisibility(View.GONE);
-//                    storyRowViewHolder.lock.setVisibility(View.VISIBLE);
-//
-//                }
-//                else
-//                {
-//                    storyRowViewHolder.heading.setVisibility(View.VISIBLE);
-//                    storyRowViewHolder.lock.setVisibility(View.GONE);
-//
-//                }
+
         storyRowViewHolder.recyclerview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -105,20 +90,16 @@ public class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerVie
     public class Story_ROW_viewHolder extends RecyclerView.ViewHolder {
         TextView title;
         TextView index, heading, date;
-        LinearLayout lock;
 
-        RelativeLayout recyclerview;
+        LinearLayout recyclerview;
 
 
         public Story_ROW_viewHolder(@NonNull View itemView) {
             super(itemView);
 
-            lock = itemView.findViewById(R.id.lock);
             recyclerview = itemView.findViewById(R.id.recyclerviewLayout);
             title = itemView.findViewById(R.id.titlee);
-            index = itemView.findViewById(R.id.index);
             date = itemView.findViewById(R.id.date_recyclerview);
-            heading = itemView.findViewById(R.id.heading_recyclerview);
 
         }
     }

@@ -3,11 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.bhola.desiKahaniya">
 
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
@@ -27,6 +26,12 @@
 
         <activity android:name=".TermsAndConditions" />
         <activity android:name=".AudioPlayer" />
+        <activity
+            android:name=".AudioPlayerOffline"
+            android:exported="false" />
+        <activity
+            android:name=".OfflineAudioStory"
+            android:exported="false" />
         <activity
             android:name=".Download_StoryPage"
             android:hardwareAccelerated="true" />
@@ -64,19 +69,20 @@
             </intent-filter>
         </activity>
 
+
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+
         <service
-            android:name=".MyMessagingNotification"
+            android:name=".FirebaseMessagingService"
+            android:permission="TODO"
+            tools:ignore="ExportedService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-<!--        <service android:name=".AudioBackgroundService" />-->
-
-        <meta-data
-            android:name="com.facebook.sdk.ApplicationId"
-            android:value="@string/facebook_app_id" />
 
 
     </application>

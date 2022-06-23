@@ -171,9 +171,7 @@ public class Notification_Story_Detail extends AppCompatActivity {
             super(itemView);
             recyclerview=itemView.findViewById(R.id.recyclerviewLayout);
             title=itemView.findViewById(R.id.titlee);
-            index=itemView.findViewById(R.id.index);
             date=itemView.findViewById(R.id.date_recyclerview);
-            heading=itemView.findViewById(R.id.heading_recyclerview);
 
         }
 

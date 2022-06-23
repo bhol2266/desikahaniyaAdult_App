@@ -7,9 +7,16 @@
       />
 
   <item android:id="@+id/menu_downloads"
-      android:icon="@drawable/favourite_active"
+      android:icon="@drawable/menu_favourite"
       android:title=" Saved Offline Stories"
       />
+
+  <item
+      android:id="@+id/menu_audio"
+      android:icon="@drawable/download"
+      android:title="Offline Audio stories" />
+
+
 
   <item android:id="@+id/menu_share_app"
       android:icon="@drawable/sharee"

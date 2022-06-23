@@ -58,6 +58,7 @@ public class SplashScreen extends AppCompatActivity {
     public static String Android_ID;
     public static String exit_Refer_appNavigation = "inactive";
     public static String Sex_Story_Switch_Open = "inactive";
+    public static String Notification_ImageURL = "https://hotdesipics.co/wp-content/uploads/2022/06/Hot-Bangla-Boudi-Ki-Big-Boobs-Nangi-Selfies-_002.jpg";
     DatabaseReference url_mref;
     public static int Login_Times = 0;
 
@@ -184,8 +185,7 @@ public class SplashScreen extends AppCompatActivity {
 
 
         url_mref = FirebaseDatabase.getInstance().getReference().child("shareapp_url");
-        url_mref.keepSynced(true);
-        url_mref.addValueEventListener(new ValueEventListener() {
+        url_mref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
@@ -195,6 +195,7 @@ public class SplashScreen extends AppCompatActivity {
                 Sex_Story_Switch_Open = (String) snapshot.child("Sex_Story_Switch_Open").getValue();
                 Ads_State = (String) snapshot.child("Ads").getValue();
                 Ad_Network_Name = (String) snapshot.child("Ad_Network").getValue();
+                Notification_ImageURL = (String) snapshot.child("Notification_ImageURL").getValue();
 
                 if (SplashScreen.Ads_State.equals("active")) {
                     showAds();
