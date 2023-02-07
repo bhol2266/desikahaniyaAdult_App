@@ -23,11 +23,6 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-    lintOptions {
-
-        checkReleaseBuilds false
-
-    }
     buildTypes {
         release {
             minifyEnabled false
@@ -38,6 +33,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    lint {
+        checkReleaseBuilds false
+    }
+    namespace 'com.bhola.desiKahaniyaAdult'
 }
 
 dependencies {
