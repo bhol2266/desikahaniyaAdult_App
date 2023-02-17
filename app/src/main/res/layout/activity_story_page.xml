@@ -46,8 +46,8 @@
                 android:longClickable="true"
                 android:text="Full Story"
                 android:textColor="@color/textcolor"
-                android:textSize="30sp"
-                android:textStyle="bold" />
+                android:textFontWeight="900"
+                android:textSize="25sp" />
 
 
             <com.airbnb.lottie.LottieAnimationView
@@ -62,8 +62,8 @@
                 android:layout_marginEnd="5dp"
                 android:layout_marginBottom="5dp"
                 android:elevation="5dp"
-                app:lottie_autoPlay="false"
                 android:visibility="gone"
+                app:lottie_autoPlay="false"
                 app:lottie_rawRes="@raw/storypage"
                 app:lottie_speed="2.3" />
 
@@ -94,10 +94,10 @@
             android:id="@+id/scrollview_story_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
             android:background="#FFF9F0"
             android:elevation="20dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="5dp">
 
 
             <TextView
@@ -105,11 +105,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
-                android:fontFamily="@font/rajdhani_regular"
+                android:fontFamily="@font/kalam_regular"
                 android:gravity="center"
                 android:text="Story Title"
-                android:textColor="#000000"
-                android:textSize="30dp"
+                android:textColor="#292929"
+                android:textSize="25dp"
                 android:textStyle="bold" />
 
 
@@ -117,22 +117,78 @@
                 android:id="@+id/scrolltext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp">
+                android:padding="5dp">
 
-                <TextView
-                    android:id="@+id/story_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_gravity="top|start"
-                    android:fontFamily="@font/kalam_regular"
-                    android:text="fffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggfffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffffffffffffff fffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffffffffffffff ffffffffffffffffffffffffffffffff"
-                    android:textColor="@color/textcolor"
-                    android:textSize="20dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+
+                    <TextView
+                        android:id="@+id/story_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|start"
+                        android:layout_marginBottom="10dp"
+                        android:fontFamily="@font/jaldi"
+                        android:text="                                                                                                                                                                                                                                                              Loading........"
+                        android:textColor="@color/textcolor"
+                        android:textSize="20dp" />
+
+                    <LinearLayout
+                        android:id="@+id/storiesInsideparagraph"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/background2"
+                        android:orientation="vertical"
+                        android:padding="5dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginBottom="5dp"
+                            android:fontFamily="@font/kalam_regular"
+                            android:gravity="center"
+                            android:text="ईश कहानी के कुछ और भाग"
+                            android:textColor="#1C31AA"
+                            android:textSize="20dp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/relatedStoriesLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/background2"
+                        android:orientation="vertical"
+                        android:padding="5dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginBottom="5dp"
+                            android:fontFamily="@font/kalam_regular"
+                            android:gravity="center"
+                            android:text="ऐसी ही कुछ और कहानियाँ"
+                            android:textColor="#1C31AA"
+                            android:textSize="20dp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
 
             </ScrollView>
 
 
         </LinearLayout>
+
+
     </LinearLayout>
 
 

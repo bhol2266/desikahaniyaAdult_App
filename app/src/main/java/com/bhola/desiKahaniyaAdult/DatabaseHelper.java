@@ -13,8 +13,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+    private static final String TAG = "TAGA";
     String DbName;
     String DbPath;
     Context context;
@@ -26,7 +28,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         this.context = mcontext;
         this.DbName = name;
         this.Database_tableNo = Database_tableNo;
-        DbPath = "/data/data/" + "com.bhola.desiKahaniya" + "/databases/";
+        DbPath = "/data/data/" + "com.bhola.desiKahaniyaAdult" + "/databases/";
     }
 
     @Override
@@ -49,7 +51,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             SQLiteDatabase.openDatabase(path, null, 0);
 //            db_delete();
             //Database file is Copied here
-            checkandUpdateLoginTimes_UpdateDatabaseCheck();
         } catch (Exception e) {
             this.getReadableDatabase();
             Log.d("TAGA", "CheckDatabases: " + "First Time Copying " + DbName);
@@ -73,30 +74,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mOutputstream.close();
             mInputStream.close();
             //Database file is Copied here
-            checkandUpdateLoginTimes_UpdateDatabaseCheck();
         } catch (Exception e) {
 
             e.printStackTrace();
         }
     }
 
-    private void checkandUpdateLoginTimes_UpdateDatabaseCheck() {
-
-        //       Check for Database Update
-
-        Cursor cursor1 = new DatabaseHelper(context, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "DB_VERSION").readalldata();
-        while (cursor1.moveToNext()) {
-            int DB_VERSION_FROM_DATABASE = cursor1.getInt(1);
-
-            if (DB_VERSION_FROM_DATABASE != SplashScreen.DB_VERSION_INSIDE_TABLE) {
-                DatabaseHelper databaseHelper2 = new DatabaseHelper(context, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "DB_VERSION");
-                databaseHelper2.db_delete();
-            }
-
-        }
-        cursor1.close();
-
-    }
 
     public void db_delete() {
 
@@ -116,67 +99,60 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public Cursor readalldata() {
-        String qry = null;
-        if (Database_tableNo.equals("Collection1")) {
-            qry = "select * from Collection1";
-        }
-        if (Database_tableNo.equals("Collection2")) {
-            qry = "select * from Collection2";
-        }
-        if (Database_tableNo.equals("Collection3")) {
-            qry = "select * from Collection3";
-        }
-        if (Database_tableNo.equals("Collection4")) {
-            qry = "select * from Collection4";
-        }
-        if (Database_tableNo.equals("Collection5")) {
-            qry = "select * from Collection5";
-        }
-        if (Database_tableNo.equals("Collection6")) {
-            qry = "select * from Collection6";
-        }
-        if (Database_tableNo.equals("UserInformation")) {
-            qry = "select * from UserInformation";
-        }
-
-        if (Database_tableNo.equals("DB_VERSION")) {
-            qry = "select * from DB_VERSION";
-        }
-
-        if (Database_tableNo.equals("Collection7")) {
-            qry = "select * from Collection7";
-        }
-        if (Database_tableNo.equals("Collection8")) {
-            qry = "select * from Collection8";
-        }
-        if (Database_tableNo.equals("Collection9")) {
-            qry = "select * from Collection9";
-        }
-        if (Database_tableNo.equals("Collection10")) {
-            qry = "select * from Collection10";
-        }
-        if (Database_tableNo.equals("Audio_Story")) {
-            qry = "select * from Audio_Story";
-        }
-        if (Database_tableNo.equals("Audio_Story_Fake")) {
-            qry = "select * from Audio_Story_Fake";
-        }
-
-
+    public Cursor readsingleRow(String title) {
         SQLiteDatabase db = this.getWritableDatabase();
-
-        cursor = db.rawQuery(qry, null);
+        Cursor cursor = db.query("StoryItems", null, "Title=?", new String[]{encryption(title)}, null, null, null, null);
         return cursor;
 
     }
 
-    public String updaterecord(int _id, int like_value) {
+    public int readLatestStoryDate() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.query("StoryItems", null, null, null, null, null, "completeDate DESC", "1");
+        cursor.moveToFirst();
+        int completeDate = cursor.getInt(9);
+        cursor.close();
+        return completeDate;
+
+    }
+
+    public Cursor readalldata() {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        cursor = db.rawQuery("select * from StoryItems", null);
+        return cursor;
+
+    }
+
+    public Cursor readAudioStories() {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.query("StoryItems", null, "audio=?", new String[]{"1"}, null, null, "completeDate DESC", "20");
+        return cursor;
+
+    }
+
+
+    public Cursor readaDataByCategory(String category) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        if (category.equals("Latest Stories")) {
+            Cursor cursor = db.query("StoryItems", null, null, null, null, null, "completeDate DESC", "20");
+            return cursor;
+        } else {
+            Cursor cursor = db.query("StoryItems", null, "category=?", new String[]{category}, null, null, "completeDate DESC", "20");
+            return cursor;
+        }
+
+
+    }
+
+    public String updaterecord(String title, int like_value) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("Liked", like_value);
+        cv.put("like", like_value);
 
-        float res = db.update(Database_tableNo, cv, "id=" + _id, null);
+        float res = db.update("StoryItems", cv, "Title = ?", new String[]{encryption(title)});
         if (res == -1)
             return "Failed";
         else
@@ -184,32 +160,41 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-
-    public String addAudioStoriesLinks(String title, String link) {
+    public String updateStoryParagraph(String title, String story) {
         SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("story", story);
 
-
-        ContentValues values = new ContentValues();
-        values.put("storyName", title);
-        values.put("storyURL", link);
-
-        // after adding all values we are passing
-        // content values to our table.
-        float res = db.insert("Audio_Story_Fake", null, values);
+        float res = db.update("StoryItems", cv, "Title = ?", new String[]{encryption(title)});
         if (res == -1)
             return "Failed";
         else
-            return "Sucess";
+            return "Liked";
     }
 
-    public String addstories(String Date, String Heading, String Title) {
-        SQLiteDatabase db = this.getWritableDatabase();
 
+    public String addstories(HashMap<String, String> m_li) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("Date", Date);
-        values.put("Heading", Heading);
-        values.put("Title", Title);
-        values.put("Liked", 0);
+        values.put("Title", encryption(m_li.get("Title")));
+        values.put("href", encryption(m_li.get("href")));
+        values.put("date", m_li.get("date"));
+        values.put("views", m_li.get("views"));
+        values.put("description", encryption(m_li.get("description")));
+        values.put("audiolink", encryption(m_li.get("audiolink")));
+        values.put("category", m_li.get("category"));
+        values.put("tags", m_li.get("tags"));
+        values.put("relatedStories", m_li.get("relatedStories"));
+        values.put("completeDate", Integer.parseInt(m_li.get("completeDate")));
+        values.put("like", 0);
+        values.put("story", m_li.get("story"));
+        if (m_li.get("audiolink").trim().length() != 0) {
+            values.put("audio", 1);
+        } else {
+            values.put("audio", 0);
+        }
+        values.put("storiesInsideParagraph", m_li.get("storiesInsideParagraph"));
 
         float res = db.insert(Database_tableNo, null, values);
         if (res == -1)
@@ -219,27 +204,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public String deleteRows() {
-        SQLiteDatabase db = this.getWritableDatabase();
-        float res = db.delete(Database_tableNo, null, null);
-        if (res == -1)
-            return "Failed";
-        else
-            return "Deleted all rows";
-    }
+    private String encryption(String text) {
 
+        int key = 5;
+        char[] chars = text.toCharArray();
+        String encryptedText = "";
+        String decryptedText = "";
 
-    public String updateEncryptStory(int _id, String encryptedStory) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("Heading", encryptedStory);
+        //Encryption
+        for (char c : chars) {
+            c += key;
+            encryptedText = encryptedText + c;
+        }
 
-        float res = db.update(Database_tableNo, cv, "id=" + _id, null);
-        if (res == -1)
-            return "Failed";
-        else
-            return Database_tableNo + " " + _id + ": Sucess";
-
+        //Decryption
+        char[] chars2 = encryptedText.toCharArray();
+        for (char c : chars2) {
+            c -= key;
+            decryptedText = decryptedText + c;
+        }
+        return encryptedText;
     }
 
 

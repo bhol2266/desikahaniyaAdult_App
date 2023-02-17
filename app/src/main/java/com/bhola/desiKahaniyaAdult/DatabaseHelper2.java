@@ -22,7 +22,7 @@ public class DatabaseHelper2 extends SQLiteOpenHelper {
         this.context = mcontext;
         this.DbName = DB_NAME;
         this.Database_tableNo = Table_Number;
-        DbPath = "/data/data/" + "com.bhola.desiKahaniya" + "/databases/";
+        DbPath = "/data/data/" + "com.bhola.desiKahaniyaAdult" + "/databases/";
     }
 
 

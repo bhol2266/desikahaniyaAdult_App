@@ -100,7 +100,7 @@ public class AudioPlayer extends AppCompatActivity {
         progressbarUnit = findViewById(R.id.progressbarUnit);
         lottie = findViewById(R.id.lottie);
 
-        storyURL = decryption(getIntent().getStringExtra("storyURL"));
+        storyURL = SplashScreen.decryption(getIntent().getStringExtra("storyURL"));
         storyName = getIntent().getStringExtra("storyName");
         storyTitle.setText(storyName.replace("-", " ").trim());
 
@@ -318,19 +318,6 @@ public class AudioPlayer extends AppCompatActivity {
 
     }
 
-    private String decryption(String encryptedText) {
-
-        int key = 5;
-        String decryptedText = "";
-
-        //Decryption
-        char[] chars2 = encryptedText.toCharArray();
-        for (char c : chars2) {
-            c -= key;
-            decryptedText = decryptedText + c;
-        }
-        return decryptedText;
-    }
 
 
     private void downloadAudio() {

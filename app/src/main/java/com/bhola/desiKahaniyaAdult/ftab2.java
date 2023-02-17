@@ -42,7 +42,7 @@ public class ftab2 extends Fragment {
     ProgressBar progressBar2;
     RecyclerView recyclerView;
     FirebaseAuth mAuth;
-
+String TAG="TAGA";
     int currentPositonTime;
 
     public ftab2() {
@@ -78,46 +78,25 @@ public class ftab2 extends Fragment {
 
 
     private void loadAudioDatabase(View view) {
-        if (SplashScreen.Login_Times < 4) {
-            Cursor cursor2 = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "Audio_Story_Fake").readalldata();
-            while (cursor2.moveToNext()) {
-                if(cursor2.getPosition()<70){
-                    storyName.add(cursor2.getString(1));
-                    storyURL.add(cursor2.getString(2));
-                }
-            }
-            Cursor cursor3 = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "Audio_Story").readalldata();
-            while (cursor3.moveToNext()) {
-                if(cursor3.getPosition()<20){
-                    storyName.add(cursor3.getString(1));
-                    storyURL.add(cursor3.getString(2));
-                }
-
-            }
-        } else {
-            Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "Audio_Story").readalldata();
-            while (cursor.moveToNext()) {
-                if (SplashScreen.Login_Times < 6) {
-                    if (cursor.getPosition() < 20) {
-                        storyName.add(cursor.getString(1));
-                        storyURL.add(cursor.getString(2));
-                    }
-                } else {
-                    storyName.add(cursor.getString(1));
-                    storyURL.add(cursor.getString(2));
-                }
-            }
-        }
         ArrayList<Object> collectionData = new ArrayList<Object>();
-        for (int i = 0; i < storyName.size(); i++) {
-            AudioModel model = new AudioModel(storyName.get(i), storyURL.get(i));
-            collectionData.add(model);
+        Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readAudioStories();
+        try {
+            try {
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(5).trim().length() != 0) {
+                        StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11),cursor.getInt(12),cursor.getString(13));
+                        collectionData.add(storyItemModel);
+                    }
+                }
+
+            } finally {
+                cursor.close();
+            }
+
+        } catch (Exception ignored) {
+
         }
 
-        Collections.shuffle(collectionData);
-        if (!SplashScreen.Sex_Story.equals("active") && !SplashScreen.Sex_Story_Switch_Open.equals("active")) {
-            collectionData.clear();
-        }
 
         adapter2 = new AudioStory_Details_Adapter(collectionData, getActivity());
         recyclerView.setAdapter(adapter2);
@@ -192,19 +171,23 @@ class AudioStory_Details_Adapter extends RecyclerView.Adapter<RecyclerView.ViewH
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         int POSITION = position;
 
-        AudioModel model = (AudioModel) collectionData.get(position);
-        String filename = model.getName().replace("-", " ").trim();
-        ((Story_ROW_viewHolder) holder).title.setText(filename);
+//        AudioModel model = (AudioModel) collectionData.get(position);
+        StoryItemModel storyItemModel = (StoryItemModel) collectionData.get(position);
+
+        String filename = SplashScreen.decryption(storyItemModel.getTitle().replace("-", " ").trim());
         ((Story_ROW_viewHolder) holder).imageview.setImageResource(R.drawable.mp3);
-        ((Story_ROW_viewHolder) holder).date.setText("2020-11-09");
+
+
+
+        ((Story_ROW_viewHolder) holder).title.setText(filename);
+        ((Story_ROW_viewHolder) holder).date.setText(storyItemModel.getDate());
+        ((Story_ROW_viewHolder) holder).views.setText(storyItemModel.getViews());
         ((Story_ROW_viewHolder) holder).recyclerview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 if (SplashScreen.Ads_State.equals("active")) {
                     if (SplashScreen.Ad_Network_Name.equals("admob")) {
-
-
                         ADS_ADMOB rewarded_ads = new ADS_ADMOB(mRewardedVideoAd, v.getContext(), v.getContext().getString(R.string.Rewarded_ADS_Unit_ID));
                         rewarded_ads.RewardedVideoAds();
                     } else {
@@ -213,10 +196,9 @@ class AudioStory_Details_Adapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     }
                 }
 
-
                 if (isInternetAvailable()) {
                     Intent intent = new Intent(context, AudioPlayer.class);
-                    intent.putExtra("storyURL", model.getURL());
+                    intent.putExtra("storyURL", storyItemModel.getAudiolink());
                     intent.putExtra("storyName", filename);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     v.getContext().startActivity(intent);
@@ -275,7 +257,8 @@ class AudioStory_Details_Adapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public class Story_ROW_viewHolder extends RecyclerView.ViewHolder {
         TextView title;
-        TextView  date;
+        TextView date;
+        TextView views;
 
         ImageView imageview;
         LinearLayout recyclerview;
@@ -288,6 +271,7 @@ class AudioStory_Details_Adapter extends RecyclerView.Adapter<RecyclerView.ViewH
             imageview = itemView.findViewById(R.id.imageview);
             title = itemView.findViewById(R.id.titlee);
             date = itemView.findViewById(R.id.date_recyclerview);
+            views = itemView.findViewById(R.id.views);
 
         }
     }

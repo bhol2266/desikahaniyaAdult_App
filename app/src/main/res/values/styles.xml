@@ -1,21 +1,23 @@
 <resources>
     <!-- Base application theme. -->
-    <style name="appTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.App" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowDisablePreview">true</item>
         <item name="colorPrimaryDark">@color/themeColor</item>
+        <item name="colorShadowDark">@color/grey</item>
+        <item name="colorShadowLight">@color/white</item>
         <item name="android:statusBarColor">@color/themeColor</item>
 <!--        <item name="android:windowTranslucentStatus">true</item>-->
 <!--        <item name="android:fitsSystemWindows">true</item>-->
         <item name="android:navigationBarColor">@color/themeColor</item>
-
+        <item name="android:fontFamily">@font/inter</item>
     </style>
 
 
 
     <style name="NavigationDrawerStyle">
 
-        <item name="android:textSize">18dp</item><!-- text size in menu-->
-        <item name="android:fontFamily">@font/robotoslab_regular</item><!-- text size in menu-->
+        <item name="android:textSize">15dp</item><!-- text size in menu-->
+        <item name="android:fontFamily">@font/inter</item><!-- text size in menu-->
 
         <!-- item size in menu-->
         <item name="android:listPreferredItemHeightSmall">40dp</item>

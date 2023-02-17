@@ -24,19 +24,32 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DatabaseReference;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class StoryPage extends AppCompatActivity {
     ImageView back, play_audio;
     TextView storyText, textsize, title_textview;
     DatabaseReference mref;
-    String date, heading, title, Ads_State, title_category;
+    String date, heading, title, href, title_category, relatedStories, storiesInsideParagraph;
     AlertDialog dialog;
     private TextToSpeech mTTS;
     Animation rotate_openAnim, rotate_closeAnim, fromBottom, toBottom;
@@ -54,6 +67,7 @@ public class StoryPage extends AppCompatActivity {
     com.facebook.ads.InterstitialAd facebook_IntertitialAds;
     com.facebook.ads.AdView facebook_adView;
 
+    String TAG = "TAGA";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +85,7 @@ public class StoryPage extends AppCompatActivity {
 
         Intents_and_InitViews();
         actionBar();
-
+        fetchStory();
 
         checkfavourite(DB_TABLENUMBER);
 
@@ -97,28 +111,26 @@ public class StoryPage extends AppCompatActivity {
 
                 final MediaPlayer mp = MediaPlayer.create(v.getContext(), R.raw.sound);
                 mp.start();
-                Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readalldata();
+
+                Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readsingleRow(title);
                 try {
-                    while (cursor.moveToNext()) {
-                        int __id = cursor.getInt(0);
-                        int liked = cursor.getInt(4);
+                    if (cursor.getCount() > 0) {
+                        cursor.moveToFirst();
+                        int liked = cursor.getInt(11);
 
-                        if (__id == _id) {
+                        if (liked == 0) {
+                            favourite_button.setImageResource(R.drawable.favourite_active);
+                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(title, 1);
+                            Toast.makeText(StoryPage.this, "Downloaded to Offline Stories", Toast.LENGTH_SHORT).show();
 
-                            if (liked == 0) {
-                                favourite_button.setImageResource(R.drawable.favourite_active);
-                                String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(_id, 1);
-                                Toast.makeText(StoryPage.this, "Downloaded to Offline Stories", Toast.LENGTH_SHORT).show();
+                        } else {
 
-                            } else {
-
-                                favourite_button.setImageResource(R.drawable.favourite_inactive);
-                                String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(_id, 0);
-                                Toast.makeText(StoryPage.this, "Removed from Offline Stories", Toast.LENGTH_SHORT).show();
-                            }
+                            favourite_button.setImageResource(R.drawable.favourite_inactive);
+                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(title, 0);
+                            Toast.makeText(StoryPage.this, "Removed from Offline Stories", Toast.LENGTH_SHORT).show();
                         }
-
                     }
+
 
                 } finally {
                     cursor.close();
@@ -183,6 +195,69 @@ public class StoryPage extends AppCompatActivity {
 
     }
 
+    private void fetchStory() {
+
+        Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(title);
+        try {
+            cursor.moveToFirst();
+            if (cursor.getCount() != 0) {
+                String story = cursor.getString(10);
+                if (story.length() == 0) {
+                    fetchStoryAPI();
+                    return;
+                }
+                storyText.setText(story.toString().trim().replaceAll("\\/", ""));
+            }
+
+        } finally {
+            cursor.close();
+        }
+
+
+    }
+
+    private void fetchStoryAPI() {
+
+        String API_URL = "https://clownfish-app-jn7w9.ondigitalocean.app/storiesDetails";
+        RequestQueue requestQueue = Volley.newRequestQueue(StoryPage.this);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    String description = jsonObject.getString("data");
+                    storyText.setText(description.toString().trim().replaceAll("\\/", ""));
+                    new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updateStoryParagraph(title, description);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d(TAG, "onErrorResponse: " + error.getMessage());
+
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("href", href);
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("Content-Type", "application/x-www-form-urlencoded");
+                return params;
+            }
+        };
+
+        requestQueue.add(stringRequest);
+    }
+
     private void showAds() {
 
 
@@ -207,6 +282,9 @@ public class StoryPage extends AppCompatActivity {
 
 //Intents
         title = getIntent().getStringExtra("title");
+        relatedStories = getIntent().getStringExtra("relatedStories");
+        storiesInsideParagraph = getIntent().getStringExtra("storiesInsideParagraph");
+        href = getIntent().getStringExtra("href");
         heading = getIntent().getStringExtra("Story");
         date = getIntent().getStringExtra("date");
         DB_TABLENUMBER = getIntent().getStringExtra("DB_TABLENUMBER");
@@ -229,29 +307,24 @@ public class StoryPage extends AppCompatActivity {
 
 
 //Set Story and Tile
-        storyText.setText(decryption(heading.toString().trim().replaceAll("\\/", "")));
         title_textview.setText(title);
-        Log.d("heading", "Intents_and_InitViews: "+decryption(heading));
-
+        setStoriesLinksInLayout();
     }
 
 
     private void checkfavourite(String DB_TABLENUMBER) {
 
-        Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readalldata();
-        while (cursor.moveToNext()) {
-            int __id = cursor.getInt(0);
-
-            int liked = cursor.getInt(4);
-            if (__id == _id) {
-
-                if (liked == 0) {
-                    favourite_button.setImageResource(R.drawable.favourite_inactive);
-                } else {
-                    favourite_button.setImageResource(R.drawable.favourite_active);
-                }
+        Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readsingleRow(title);
+        if (cursor.getCount() > 0) {
+            cursor.moveToFirst();
+            int liked = cursor.getInt(11);
+            if (liked == 0) {
+                favourite_button.setImageResource(R.drawable.favourite_inactive);
+            } else {
+                favourite_button.setImageResource(R.drawable.favourite_active);
             }
         }
+
         if (cursor != null) {
             cursor.close();
         }
@@ -298,12 +371,6 @@ public class StoryPage extends AppCompatActivity {
 
         text2Speech();
         title_category = getIntent().getStringExtra("bhola2");
-        collection = getIntent().getStringExtra("Collection");
-        if (collection == null) {
-            TextView title = findViewById(R.id.title_collection);
-            title.setText("Notification Story");
-        }
-
         back = findViewById(R.id.back_arrow);
         back.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -313,10 +380,11 @@ public class StoryPage extends AppCompatActivity {
         });
 
     }
+
     @Override
-    public void onBackPressed()  {
+    public void onBackPressed() {
         super.onBackPressed();
-        if(SplashScreen.Ads_State.equals("active")) {
+        if (SplashScreen.Ads_State.equals("active")) {
             if (SplashScreen.Ad_Network_Name.equals("admob")) {
                 ADS_ADMOB rewarded_ads = new ADS_ADMOB(mRewardedVideoAd, this, getString(R.string.Rewarded_ADS_Unit_ID));
                 rewarded_ads.RewardedVideoAds();
@@ -437,6 +505,93 @@ public class StoryPage extends AppCompatActivity {
             mTTS.stop();
         }
         super.onStop();
+    }
+
+
+    private void setStoriesLinksInLayout() {
+
+
+        List<String> storiesInsideParagraphList = new ArrayList<String>(Arrays.asList(storiesInsideParagraph.split(",")));
+        LinearLayout storiesInsideparagraphLayout = findViewById(R.id.storiesInsideparagraph);
+        for (int i = 0; i < storiesInsideParagraphList.size(); i++) {
+            String tagKey = storiesInsideParagraphList.get(i).trim();
+            View view = getLayoutInflater().inflate(R.layout.tag, null);
+            TextView tag = view.findViewById(R.id.tag);
+            tag.setText(i + 1 + ". " + tagKey);
+            tag.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    StoryItemModel storyItemModel = getDataFROM_DB(tagKey);
+                    if (storyItemModel == null) {
+                        Toast.makeText(StoryPage.this, "Story not found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Intent intent = new Intent(v.getContext(), StoryPage.class);
+                    intent.putExtra("category", title_category);
+                    intent.putExtra("title", SplashScreen.decryption(storyItemModel.getTitle()));
+                    intent.putExtra("date", storyItemModel.getDate());
+                    intent.putExtra("href", SplashScreen.decryption(storyItemModel.getHref()));
+                    intent.putExtra("relatedStories", storyItemModel.getRelatedStories());
+                    intent.putExtra("storiesInsideParagraph", storyItemModel.getStoriesInsideParagraph());
+
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    v.getContext().startActivity(intent);
+                }
+            });
+            storiesInsideparagraphLayout.addView(view);
+        }
+
+
+        List<String> myList = new ArrayList<String>(Arrays.asList(relatedStories.split(",")));
+        LinearLayout relatedStoriesLayout = findViewById(R.id.relatedStoriesLayout);
+        for (int i = 0; i < myList.size(); i++) {
+
+            String tagKey = myList.get(i).trim();
+
+            View view = getLayoutInflater().inflate(R.layout.tag, null);
+            TextView relatedStoryText = view.findViewById(R.id.tag);
+            relatedStoryText.setText(i + 1 + ". " + tagKey);
+
+            relatedStoryText.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    StoryItemModel storyItemModel = getDataFROM_DB(tagKey);
+                    if (storyItemModel == null) {
+                        Toast.makeText(StoryPage.this, "Story not found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Intent intent = new Intent(v.getContext(), StoryPage.class);
+                    intent.putExtra("category", title_category);
+                    intent.putExtra("title", SplashScreen.decryption(storyItemModel.getTitle()));
+                    intent.putExtra("date", storyItemModel.getDate());
+                    intent.putExtra("href", SplashScreen.decryption(storyItemModel.getHref()));
+                    intent.putExtra("relatedStories", storyItemModel.getRelatedStories());
+                    intent.putExtra("storiesInsideParagraph", storyItemModel.getStoriesInsideParagraph());
+
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    v.getContext().startActivity(intent);
+                }
+            });
+            relatedStoriesLayout.addView(view);
+        }
+    }
+
+    private StoryItemModel getDataFROM_DB(String Title) {
+        Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(Title);
+
+        if (cursor.getCount() == 0) {
+            return null;
+        }
+        try {
+            cursor.moveToFirst();
+            StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+
+            return storyItemModel;
+        } finally {
+            cursor.close();
+        }
+
     }
 
 

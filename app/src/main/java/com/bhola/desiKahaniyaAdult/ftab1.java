@@ -3,16 +3,36 @@ package com.bhola.desiKahaniyaAdult;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.GridLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+
+import soup.neumorphism.NeumorphCardView;
+import soup.neumorphism.NeumorphTextView;
 
 public class ftab1 extends Fragment {
     Context context = getActivity();
     soup.neumorphism.NeumorphCardView collection1, collection2, collection3, collection4, collection5, collection6;
+    private String TAG="TAGA";
 
     public ftab1() {
         // Required empty public constructor
@@ -26,103 +46,99 @@ public class ftab1 extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_ftab1, container, false);
 
-        collectionGridItems(view);
         if (SplashScreen.Login_Times > 3 && SplashScreen.Sex_Story.equals("active")) {
-            changeTitle_Textview(view);
+//            changeTitle_Textview(view);
         }
 
-
+        gridItems(view);
         return view;
     }
 
-    private void collectionGridItems(View view) {
-        collection1 = view.findViewById(R.id.collection1);
-        collection1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection1";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "प्रेम कहानी-1");
-                startActivity(intent);
+
+
+    private void gridItems(View view) {
+        ArrayList<HashMap<String, String>> Category_List = new ArrayList<HashMap<String, String>>();
+        HashMap<String, String> m_li;
+
+        try {
+            JSONObject obj = new JSONObject(loadJSONFromAsset());
+            JSONArray m_jArry = obj.getJSONArray("categories");
+
+            for (int i = 0; i < m_jArry.length(); i++) {
+                JSONObject json_obj = m_jArry.getJSONObject(i);
+
+                String category_title = json_obj.getString("category_title");
+                String href = json_obj.getString("href");
+
+                //Add your values in your `ArrayList` as below:
+                m_li = new HashMap<String, String>();
+                m_li.put("category_title", category_title);
+                m_li.put("href", href);
+                Category_List.add(m_li);
+
             }
-        });
-        collection2 = view.findViewById(R.id.collection2);
-        collection2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection2";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "प्रेम कहानी-2");
-                startActivity(intent);
-            }
-        });
-        collection3 = view.findViewById(R.id.collection3);
-        collection3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection3";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "हीर रांझा लवस्टोरी");
-                startActivity(intent);
-            }
-        });
-        collection4 = view.findViewById(R.id.collection4);
-        collection4.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection4";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "देसी कहानी-1");
-                startActivity(intent);
-            }
-        });
-        collection5 = view.findViewById(R.id.collection5);
-        collection5.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection5";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "देसी कहानी-2");
-                startActivity(intent);
-            }
-        });
-        collection6 = view.findViewById(R.id.collection6);
-        collection6.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), Collection_detail.class);
-                String Collection_DB_Table_Name = "Collection6";
-                intent.putExtra("Collection_DB_Table_Name", Collection_DB_Table_Name);
-                intent.putExtra("bhola2", "प्रेम कहानी-3");
-                startActivity(intent);
-            }
-        });
+            createGridItems(Category_List,view);
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.d(TAG, "categorySlider: "+e.getMessage());
+
+        }
     }
 
-    private void changeTitle_Textview(View view) {
-        TextView Textview1, Textview2, Textview3, Textview4, Textview5, Textview6;
-
-        Textview1 = view.findViewById(R.id.Textview1);
-        Textview2 = view.findViewById(R.id.Textview2);
-        Textview3 = view.findViewById(R.id.Textview3);
-        Textview4 = view.findViewById(R.id.Textview4);
-        Textview5 = view.findViewById(R.id.Textview5);
-        Textview6 = view.findViewById(R.id.Textview6);
-//
-        Textview1.setText("देसी कहानी-1");
-        Textview2.setText("देसी कहानी-2");
-        Textview3.setText("देसी कहानी-3");
-        Textview4.setText("देसी कहानी-4");
-        Textview5.setText("देसी कहानी-5");
-        Textview6.setText("देसी कहानी-6");
+    private void createGridItems(ArrayList<HashMap<String, String>> Category_List, View view) {
 
 
+        GridLayout gridLayout = view.findViewById(R.id.gridlayout);
+        for (int i = 0; i < Category_List.size(); i++) {
+
+
+            String category = Category_List.get(i).get("category_title").toString();
+            String href = Category_List.get(i).get("href").toString();
+
+            View vieww = getLayoutInflater().inflate(R.layout.homepage_griditem, null);
+            TextView categoryTextView=vieww.findViewById(R.id.Textview1);
+            NeumorphCardView cardView=vieww.findViewById(R.id.cardview);
+
+            categoryTextView.setText(category);
+
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            float requiredWidth = (float) (displayMetrics.widthPixels/2.2);
+
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams((int) requiredWidth,250);
+            cardView.setLayoutParams(params);
+
+            cardView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(getActivity(), Collection_detail.class);
+                    intent.putExtra("category", category);
+                    intent.putExtra("href",href);
+                    startActivity(intent);
+                }
+            });
+
+            gridLayout.addView(vieww);
+        }
     }
 
+
+    public String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = getActivity().getAssets().open("GridItems.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+    }
 
 }

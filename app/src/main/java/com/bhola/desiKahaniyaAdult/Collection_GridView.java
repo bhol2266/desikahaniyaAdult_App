@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,6 +33,18 @@ import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
 import com.google.android.play.core.review.ReviewManagerFactory;
 import com.google.android.play.core.tasks.Task;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class
 Collection_GridView extends AppCompatActivity {
@@ -68,9 +81,14 @@ Collection_GridView extends AppCompatActivity {
 
         navigationDrawer();
         tabview();
+//        insertDataIN_Database();
+
 
 
     }
+
+
+
 
     private void tabview() {
         tabLayout = (TabLayout) findViewById(R.id.tablayout1);
@@ -394,4 +412,100 @@ Collection_GridView extends AppCompatActivity {
             }
         });
     }
+
+
+    private void insertDataIN_Database() {
+        ArrayList<HashMap<String, String>> Category_List = new ArrayList<HashMap<String, String>>();
+        HashMap<String, String> m_li;
+
+        try {
+
+            JSONArray m_jArry = new JSONArray(loadJSONFromAsset());
+            for (int i = 0; i < m_jArry.length(); i++) {
+
+
+                JSONObject json_obj = m_jArry.getJSONObject(i);
+
+                String Title = json_obj.getString("Title");
+                String href = json_obj.getString("href");
+                String date = json_obj.getString("date");
+                int completeDate = json_obj.getInt("completeDate");
+                String views = json_obj.getString("views");
+                String description = json_obj.getString("description");
+                String audiolink = json_obj.getString("audiolink");
+
+                JSONObject categoryObject = json_obj.getJSONObject("category");
+                String category = categoryObject.getString("title");
+
+                JSONArray tagsArray = json_obj.getJSONArray("tagsArray");
+                ArrayList<String> tagsList = new ArrayList();
+                for (int j = 0; j < tagsArray.length(); j++) {
+                    tagsList.add(tagsArray.getString(j));
+                }
+                String tags = String.join(", ", tagsList);
+
+
+                JSONArray relatedStoriesLinks_Array = json_obj.getJSONArray("relatedStoriesLinks");
+                ArrayList<String> relatedStoriesList = new ArrayList();
+                for (int j = 0; j < relatedStoriesLinks_Array.length(); j++) {
+                    JSONObject relatedStoriesLinksObject = (JSONObject) relatedStoriesLinks_Array.get(j);
+                    relatedStoriesList.add(relatedStoriesLinksObject.getString("title"));
+                }
+                String relatedStories = String.join(", ", relatedStoriesList);
+
+                JSONArray storiesInsideParagraph_Array = json_obj.getJSONArray("storiesLink_insideParagrapgh");
+                ArrayList<String> storiesInsideParagraphList = new ArrayList();
+                for (int j = 0; j < storiesInsideParagraph_Array.length(); j++) {
+                    JSONObject obj = (JSONObject) storiesInsideParagraph_Array.get(j);
+                    storiesInsideParagraphList.add(obj.getString("title"));
+                }
+                String storiesInsideParagraph = String.join(", ", storiesInsideParagraphList);
+
+                //Add your values in your `ArrayList` as below:
+                m_li = new HashMap<String, String>();
+                m_li.put("Title", Title);
+                m_li.put("href", href);
+                m_li.put("date", date);
+                m_li.put("views", views);
+                m_li.put("description", description);
+                m_li.put("audiolink", audiolink);
+                m_li.put("category", category);
+                m_li.put("tags", tags);
+                m_li.put("relatedStories", relatedStories);
+                m_li.put("completeDate", String.valueOf(completeDate));
+                m_li.put("storiesInsideParagraph", storiesInsideParagraph);
+                Category_List.add(m_li);
+
+
+                DatabaseHelper insertRecord = new DatabaseHelper(getApplicationContext(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems");
+                String res = insertRecord.addstories(m_li);
+                Log.d(TAG, "INSERT DATA: " + res);
+            }
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.d(TAG, "Datebase Error: " + e.getMessage());
+
+        }
+    }
+
+    public String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = Collection_GridView.this.getAssets().open("storymodels.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+
+        return json;
+    }
+
 }
+

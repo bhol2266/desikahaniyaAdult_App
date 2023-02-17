@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -47,7 +49,7 @@ public class Collection_detail extends AppCompatActivity {
     List<Object> collectonData;
     Collection_Details_ADAPTER adapter2;
     DatabaseReference mref2;
-    String Collection_DB_Table_Name, Ads_State, title_category;
+    String Ads_State, title_category,href;
     Context context;
     ImageView back, share_ap;
     private AdView mAdView;
@@ -101,7 +103,6 @@ public class Collection_detail extends AppCompatActivity {
         actionBar();
 
         recyclerView = findViewById(R.id.recyclerView);
-
         collectonData = new ArrayList<Object>();
         progressBar2 = findViewById(R.id.progressBar2);
         check_Internet_Connection = findViewById(R.id.check_Internet_Connection);
@@ -135,52 +136,13 @@ public class Collection_detail extends AppCompatActivity {
 
     private void Send_ALL_DATA_TO_RECYCLERVIEW() {
 
-
-        if (SplashScreen.Login_Times < 4) {
-
-            String DB_TABLE = getIntent().getStringExtra("Collection_DB_Table_Name");
-            if (DB_TABLE.equals("Collection1") || DB_TABLE.equals("Collection2") || DB_TABLE.equals("Collection3") || DB_TABLE.equals("Collection6")) {
-
-                if (DB_TABLE.equals("Collection1")) {
-                    getDataFromDatabase_loveStory("Collection7");
-                    Collection_DB_Table_Name = "Collection7";
-                }
-                if (DB_TABLE.equals("Collection2")) {
-                    getDataFromDatabase_loveStory("Collection8");
-                    Collection_DB_Table_Name = "Collection8";
-                }
-
-                if (DB_TABLE.equals("Collection3")) {
-                    getDataFromDatabase_loveStory("Collection9");
-                    Collection_DB_Table_Name = "Collection9";
-                }
-
-                if (DB_TABLE.equals("Collection6")) {
-                    getDataFromDatabase_loveStory("Collection10");
-                    Collection_DB_Table_Name = "Collection10";
-                }
-
-            } else {
-                // Collection-4, Collection-5 are Desi Kahanis
-                getDataFromDatabase();
-            }
-
-
-        } else {
-            // If user is logged in more than 4 time all Collection Will be desi Kahanis
-            getDataFromDatabase();
-        }
+        getDataFromDatabase();
 
         recyclerView.setVisibility(View.VISIBLE);
         progressBar2.setVisibility(View.GONE);
 
-        if (!SplashScreen.Sex_Story.equals("active") && !SplashScreen.Sex_Story_Switch_Open.equals("active")) {
-            collectonData.clear();
-            getDataFromDatabaselovestory();
 
-        }
-
-        adapter2 = new Collection_Details_ADAPTER(collectonData, context, Collection_DB_Table_Name, Ads_State, title_category);
+        adapter2 = new Collection_Details_ADAPTER(collectonData, context, "StoryItems", Ads_State, title_category);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter2);
         adapter2.notifyDataSetChanged();
@@ -189,75 +151,20 @@ public class Collection_detail extends AppCompatActivity {
 
 
     private void getDataFromDatabase() {
-        List<Object> collectonDataTemp = new ArrayList<>();
+
+            Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href);
         try {
-            Cursor cursor = new DatabaseHelper(this, "MCB_Story", SplashScreen.DB_VERSION, Collection_DB_Table_Name).readalldata();
             try {
                 while (cursor.moveToNext()) {
-                    FirebaseData firebaseData = new FirebaseData(cursor.getInt(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
-                    collectonDataTemp.add(firebaseData);
-
+                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11),cursor.getInt(12),cursor.getString(13));
+                    collectonData.add(storyItemModel);
                 }
-
-                if (SplashScreen.Login_Times < 6) {
-                    for (int i = 0; i < 20; i++) {
-                        collectonData.add(collectonDataTemp.get(i));
-                    }
-                } else {
-                    collectonData = collectonDataTemp;
-                }
-
-                    Collections.shuffle(collectonData);
-
 
             } finally {
                 cursor.close();
             }
 
-        } catch (Exception e) {
-
-        }
-
-
-    }
-
-    private void getDataFromDatabaselovestory() {
-
-        try {
-            Cursor cursor = new DatabaseHelper(this, "MCB_Story", SplashScreen.DB_VERSION, "Collection8").readalldata();
-            try {
-                while (cursor.moveToNext()) {
-                    FirebaseData firebaseData = new FirebaseData(cursor.getInt(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
-                    collectonData.add(firebaseData);
-                }
-                Collections.shuffle(collectonData);
-            } finally {
-                cursor.close();
-            }
-        } catch (Exception e) {
-        }
-
-    }
-
-
-    private void getDataFromDatabase_loveStory(String table) {
-
-
-        try {
-            Cursor cursor = new DatabaseHelper(this, "MCB_Story", SplashScreen.DB_VERSION, table).readalldata();
-            try {
-                while (cursor.moveToNext()) {
-                    FirebaseData firebaseData = new FirebaseData(cursor.getInt(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
-                    collectonData.add(firebaseData);
-
-                }
-
-
-            } finally {
-                cursor.close();
-            }
-
-        } catch (Exception e) {
+        } catch (Exception ignored) {
 
         }
 
@@ -315,9 +222,9 @@ public class Collection_detail extends AppCompatActivity {
         mref2 = FirebaseDatabase.getInstance().getReference();
 
         TextView title;
-        title_category = getIntent().getStringExtra("bhola2");
+        title_category = getIntent().getStringExtra("category");
+        href = getIntent().getStringExtra("href");
         title = findViewById(R.id.title_collection);
-        Collection_DB_Table_Name = getIntent().getStringExtra("Collection_DB_Table_Name");
         title.setText(title_category);
         title.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -391,3 +298,89 @@ public class Collection_detail extends AppCompatActivity {
 }
 
 
+
+
+
+
+class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final int MENU_ITEM_VIEW_TYPE = 0;
+
+    private static final int UNIFIED_NATIVE_AD_VIEW_TYPE = 1;
+    List<Object> collectonData;
+
+    Context context;
+    String Collection_DB_Table_Name;
+    String Ads_State;
+    String title_category;
+
+    public Collection_Details_ADAPTER(List<Object> collectonData, Context context, String message, String ads_State, String title_category) {
+        this.collectonData = collectonData;
+        this.context = context;
+        this.Collection_DB_Table_Name = message;
+        this.Ads_State = ads_State;
+        this.title_category = title_category;
+    }
+
+    @NonNull
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
+        View Story_ROW_viewHolder = LayoutInflater.from(parent.getContext()).inflate(R.layout.grid_layout, parent, false);
+        return new Collection_Details_ADAPTER.Story_ROW_viewHolder(Story_ROW_viewHolder);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+
+        Collection_Details_ADAPTER.Story_ROW_viewHolder storyRowViewHolder = (Story_ROW_viewHolder) holder;
+        StoryItemModel storyItemModel = (StoryItemModel) collectonData.get(position);
+
+        storyRowViewHolder.title.setText(SplashScreen.decryption(storyItemModel.getTitle()));
+        storyRowViewHolder.date.setText(storyItemModel.getDate());
+        storyRowViewHolder.views.setText(storyItemModel.getViews());
+
+
+        storyRowViewHolder.recyclerview.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(v.getContext(), StoryPage.class);
+                intent.putExtra("category", title_category);
+                intent.putExtra("title",SplashScreen.decryption(storyItemModel.getTitle()));
+                intent.putExtra("date", storyItemModel.getDate());
+                intent.putExtra("href",SplashScreen.decryption(storyItemModel.getHref()));
+                intent.putExtra("relatedStories",storyItemModel.getRelatedStories());
+                intent.putExtra("storiesInsideParagraph",storyItemModel.getStoriesInsideParagraph());
+
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                v.getContext().startActivity(intent);
+            }
+        });
+    }
+
+
+    @Override
+    public int getItemCount() {
+        return collectonData.size();
+    }
+
+
+    public class Story_ROW_viewHolder extends RecyclerView.ViewHolder {
+        TextView title;
+        TextView index, heading, date,views;
+
+        LinearLayout recyclerview;
+
+
+        public Story_ROW_viewHolder(@NonNull View itemView) {
+            super(itemView);
+
+            recyclerview = itemView.findViewById(R.id.recyclerviewLayout);
+            title = itemView.findViewById(R.id.titlee);
+            date = itemView.findViewById(R.id.date_recyclerview);
+            views = itemView.findViewById(R.id.views);
+
+        }
+    }
+
+
+}
