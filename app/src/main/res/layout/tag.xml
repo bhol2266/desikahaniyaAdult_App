@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<soup.neumorphism.NeumorphCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="wrap_content"
+    android:layout_width="wrap_content">
+
+
+
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/tag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/hooverffext"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:maxLines="1"
+        android:alpha="0.9"
+        android:textSize="18dp"
+        android:textColor="@color/semi_black">
+
+    </TextView>
+
+</soup.neumorphism.NeumorphCardView>
+
+
