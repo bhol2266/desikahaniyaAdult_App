@@ -36,6 +36,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Collection_detail extends AppCompatActivity {
 
@@ -49,7 +51,7 @@ public class Collection_detail extends AppCompatActivity {
     List<Object> collectonData;
     Collection_Details_ADAPTER adapter2;
     DatabaseReference mref2;
-    String Ads_State, title_category,href;
+    String Ads_State, title_category, href;
     Context context;
     ImageView back, share_ap;
     private AdView mAdView;
@@ -111,7 +113,21 @@ public class Collection_detail extends AppCompatActivity {
 
         if (isInternetAvailable(Collection_detail.this)) {
 //
-            Send_ALL_DATA_TO_RECYCLERVIEW();
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    getDataFromDatabase();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Send_ALL_DATA_TO_RECYCLERVIEW();
+                        }
+                    });
+                }
+            });
+
+
 
 
         } else {
@@ -136,7 +152,6 @@ public class Collection_detail extends AppCompatActivity {
 
     private void Send_ALL_DATA_TO_RECYCLERVIEW() {
 
-        getDataFromDatabase();
 
         recyclerView.setVisibility(View.VISIBLE);
         progressBar2.setVisibility(View.GONE);
@@ -152,11 +167,11 @@ public class Collection_detail extends AppCompatActivity {
 
     private void getDataFromDatabase() {
 
-            Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href);
+        Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href);
         try {
             try {
                 while (cursor.moveToNext()) {
-                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11),cursor.getInt(12),cursor.getString(13));
+                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
                     collectonData.add(storyItemModel);
                 }
 
@@ -298,10 +313,6 @@ public class Collection_detail extends AppCompatActivity {
 }
 
 
-
-
-
-
 class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int MENU_ITEM_VIEW_TYPE = 0;
 
@@ -345,11 +356,11 @@ class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewH
             public void onClick(View v) {
                 Intent intent = new Intent(v.getContext(), StoryPage.class);
                 intent.putExtra("category", title_category);
-                intent.putExtra("title",SplashScreen.decryption(storyItemModel.getTitle()));
+                intent.putExtra("title", SplashScreen.decryption(storyItemModel.getTitle()));
                 intent.putExtra("date", storyItemModel.getDate());
-                intent.putExtra("href",SplashScreen.decryption(storyItemModel.getHref()));
-                intent.putExtra("relatedStories",storyItemModel.getRelatedStories());
-                intent.putExtra("storiesInsideParagraph",storyItemModel.getStoriesInsideParagraph());
+                intent.putExtra("href", SplashScreen.decryption(storyItemModel.getHref()));
+                intent.putExtra("relatedStories", storyItemModel.getRelatedStories());
+                intent.putExtra("storiesInsideParagraph", storyItemModel.getStoriesInsideParagraph());
 
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 v.getContext().startActivity(intent);
@@ -366,7 +377,7 @@ class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public class Story_ROW_viewHolder extends RecyclerView.ViewHolder {
         TextView title;
-        TextView index, heading, date,views;
+        TextView index, heading, date, views;
 
         LinearLayout recyclerview;
 
