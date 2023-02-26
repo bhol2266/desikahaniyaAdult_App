@@ -2,6 +2,7 @@ package com.bhola.desiKahaniyaAdult;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -22,9 +23,13 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import soup.neumorphism.NeumorphCardView;
 import soup.neumorphism.NeumorphTextView;
@@ -32,7 +37,8 @@ import soup.neumorphism.NeumorphTextView;
 public class ftab1 extends Fragment {
     Context context = getActivity();
     soup.neumorphism.NeumorphCardView collection1, collection2, collection3, collection4, collection5, collection6;
-    private String TAG="TAGA";
+    private String TAG = "TAGA";
+    View view;
 
     public ftab1() {
         // Required empty public constructor
@@ -44,50 +50,45 @@ public class ftab1 extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
 
-        View view = inflater.inflate(R.layout.fragment_ftab1, container, false);
+        view = inflater.inflate(R.layout.fragment_ftab1, container, false);
 
         if (SplashScreen.Login_Times > 3 && SplashScreen.Sex_Story.equals("active")) {
 //            changeTitle_Textview(view);
         }
 
-        gridItems(view);
+        gridItems();
         return view;
     }
 
 
-
-    private void gridItems(View view) {
+    private void gridItems( ) {
         ArrayList<HashMap<String, String>> Category_List = new ArrayList<HashMap<String, String>>();
-        HashMap<String, String> m_li;
 
-        try {
-            JSONObject obj = new JSONObject(loadJSONFromAsset());
-            JSONArray m_jArry = obj.getJSONArray("categories");
-
-            for (int i = 0; i < m_jArry.length(); i++) {
-                JSONObject json_obj = m_jArry.getJSONObject(i);
-
-                String category_title = json_obj.getString("category_title");
-                String href = json_obj.getString("href");
-
-                //Add your values in your `ArrayList` as below:
-                m_li = new HashMap<String, String>();
-                m_li.put("category_title", category_title);
-                m_li.put("href", href);
-                Category_List.add(m_li);
-
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                try (Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "GridItems").readGridItems()) {
+                    while (cursor.moveToNext()) {
+                        HashMap<String, String> m_li = new HashMap<String, String>();
+                        m_li.put("category_title", cursor.getString(0));
+                        m_li.put("href", cursor.getString(1));
+                        Category_List.add(m_li);
+                    }
+                }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        createGridItems(Category_List);
+                    }
+                });
             }
-            createGridItems(Category_List,view);
+        });
 
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-            Log.d(TAG, "categorySlider: "+e.getMessage());
-
-        }
     }
 
-    private void createGridItems(ArrayList<HashMap<String, String>> Category_List, View view) {
+    private void createGridItems(ArrayList<HashMap<String, String>> Category_List) {
 
 
         GridLayout gridLayout = view.findViewById(R.id.gridlayout);
@@ -98,16 +99,16 @@ public class ftab1 extends Fragment {
             String href = Category_List.get(i).get("href").toString();
 
             View vieww = getLayoutInflater().inflate(R.layout.homepage_griditem, null);
-            TextView categoryTextView=vieww.findViewById(R.id.Textview1);
-            NeumorphCardView cardView=vieww.findViewById(R.id.cardview);
+            TextView categoryTextView = vieww.findViewById(R.id.Textview1);
+            NeumorphCardView cardView = vieww.findViewById(R.id.cardview);
 
             categoryTextView.setText(category);
 
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            float requiredWidth = (float) (displayMetrics.widthPixels/2.2);
+            float requiredWidth = (float) (displayMetrics.widthPixels / 2.2);
 
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams((int) requiredWidth,250);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams((int) requiredWidth, 250);
             cardView.setLayoutParams(params);
 
             cardView.setOnClickListener(new View.OnClickListener() {
@@ -115,7 +116,7 @@ public class ftab1 extends Fragment {
                 public void onClick(View view) {
                     Intent intent = new Intent(getActivity(), Collection_detail.class);
                     intent.putExtra("category", category);
-                    intent.putExtra("href",href);
+                    intent.putExtra("href", href);
                     startActivity(intent);
                 }
             });
@@ -128,12 +129,12 @@ public class ftab1 extends Fragment {
     public String loadJSONFromAsset() {
         String json = null;
         try {
-            InputStream is = getActivity().getAssets().open("GridItems.json");
+            InputStream is = requireActivity().getAssets().open("GridItems.json");
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
             is.close();
-            json = new String(buffer, "UTF-8");
+            json = new String(buffer, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             ex.printStackTrace();
             return null;

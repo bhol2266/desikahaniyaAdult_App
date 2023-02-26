@@ -124,23 +124,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public Cursor readAudioStories() {
-
+    public Cursor readAudioStories(int page) {
+        int skip = (page - 1) * 15;
         SQLiteDatabase db = this.getWritableDatabase();
-        Cursor cursor = db.query("StoryItems", null, "audio=?", new String[]{"1"}, null, null, "completeDate DESC", "20");
+        Cursor cursor = db.query("StoryItems", null, "audio=?", new String[]{"1"}, null, null, "completeDate DESC",String.valueOf(skip) + ",15");
         return cursor;
 
     }
 
+    public Cursor readGridItems() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.query("GridItems", null, null, null, null, null, null, null);
+        return cursor;
+    }
 
-    public Cursor readaDataByCategory(String category) {
 
+    public Cursor readaDataByCategory(String category, int page) {
+
+        int skip = (page - 1) * 15;
         SQLiteDatabase db = this.getWritableDatabase();
         if (category.equals("Latest Stories")) {
-            Cursor cursor = db.query("StoryItems", null, null, null, null, null, "completeDate DESC", "20");
+            Cursor cursor = db.query("StoryItems", null, null, null, null, null, "completeDate DESC", String.valueOf(skip) + ",15");
             return cursor;
         } else {
-            Cursor cursor = db.query("StoryItems", null, "category=?", new String[]{category}, null, null, "completeDate DESC", "20");
+            Cursor cursor = db.query("StoryItems", null, "category=?", new String[]{category}, null, null, "completeDate DESC", String.valueOf(skip) + ",15");
             return cursor;
         }
 

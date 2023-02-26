@@ -11,9 +11,13 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +30,10 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -60,7 +68,8 @@ public class AudioPlayer extends AppCompatActivity {
     TextView currentTime, storyTitle;
     LottieAnimationView lottie;
     ProgressBar progressbarUnit;
-    boolean URL_notWorking=false;
+    boolean URL_notWorking = false;
+    String TAG = "TAGA";
 
     // Ads Stuff
     AdView mAdView;
@@ -159,7 +168,6 @@ public class AudioPlayer extends AppCompatActivity {
         });
 
 
-
         mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
             @Override
             public void onBufferingUpdate(MediaPlayer mp, int percent) {
@@ -187,7 +195,7 @@ public class AudioPlayer extends AppCompatActivity {
             @SuppressLint("ResourceAsColor")
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
-                URL_notWorking=true;
+                URL_notWorking = true;
                 loadingMessage.setText("Audio link not working, Please try another story");
                 loadingMessage.setTextColor(Color.parseColor("#FF0000"));
                 loadingMessage.setTextSize(20);
@@ -202,7 +210,7 @@ public class AudioPlayer extends AppCompatActivity {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 playBtn.setBackgroundResource(R.drawable.play);
-                if(!URL_notWorking){
+                if (!URL_notWorking) {
                     Toast.makeText(AudioPlayer.this, "Finished", Toast.LENGTH_SHORT).show();
                     try {
                         onBackPressed();
@@ -319,7 +327,6 @@ public class AudioPlayer extends AppCompatActivity {
     }
 
 
-
     private void downloadAudio() {
         ImageView downloadBtn;
         downloadBtn = findViewById(R.id.downloadBtn);
@@ -366,20 +373,66 @@ public class AudioPlayer extends AppCompatActivity {
     }
 
     public void requestPermissions() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            Toast.makeText(AudioPlayer.this, "Please Give Permission to download file", Toast.LENGTH_SHORT).show();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Android is 11(R) and above
+            try {
+                Log.d(TAG, "requestPermissions: try");
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", this.getPackageName(), null);
+                intent.setData(uri);
+                storageActivityResultLauncher.launch(intent);
+            } catch (Exception e) {
+                Log.d(TAG, "requestPermissions: ", e);
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                storageActivityResultLauncher.launch(intent);
+
+            }
         } else {
-            ActivityCompat.requestPermissions(AudioPlayer.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+            //Android is below 11(R)
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+//                Toast.makeText(AudioPlayer.this, "Please Give Permission to download file", Toast.LENGTH_SHORT).show();
+//            } else {
+//                ActivityCompat.requestPermissions(AudioPlayer.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+//            }
         }
     }
 
+    private ActivityResultLauncher<Intent> storageActivityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        @Override
+        public void onActivityResult(ActivityResult result) {
+            //here we will handle result of intent
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                //Android is 11(R) and above
+                if (Environment.isExternalStorageManager()) {
+                    //Manage External storage permission is granted
+                    Log.d(TAG, "onActivityResult: " + "permission is granted");
+                    Toast.makeText(AudioPlayer.this, "Permission Granted", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    //Manage External storage permission is denied
+                    Log.d(TAG, "onActivityResult: " + "permission is denied");
+                    Toast.makeText(AudioPlayer.this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                //Android is below 11(R)
+
+            }
+        }
+    });
 
     private boolean checkPermissions() {
-        int result = ContextCompat.checkSelfPermission(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (result == PackageManager.PERMISSION_GRANTED) {
-            return true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Android is 11(R) and above
+            return Environment.isExternalStorageManager();
         } else {
-            return false;
+            //Android is below 11(R)
+            int write = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int read = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            return write == PackageManager.PERMISSION_GRANTED && read == PackageManager.PERMISSION_GRANTED;
         }
     }
 
@@ -387,14 +440,22 @@ public class AudioPlayer extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        switch (requestCode) {
-            case 100:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == 100) {
+            if (grantResults.length > 0) {
+                boolean write = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                boolean read = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                if (write && read) {
+                    Log.d(TAG, "onActivityResult: " + "permission is granted");
                     Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+
                 } else {
                     Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "onActivityResult: " + "permission is Denied");
+
                 }
+            }
         }
+
     }
 
 
@@ -453,7 +514,7 @@ public class AudioPlayer extends AppCompatActivity {
         builder.setCancelable(false);
 
         description = promptView.findViewById(R.id.description);
-        description.setText(storyName+".mp3 downloading...");
+        description.setText(storyName + ".mp3 downloading...");
         progress_indicator = promptView.findViewById(R.id.progress_indicator);
         downloadSize = promptView.findViewById(R.id.downloadSize);
         cancelbtn = promptView.findViewById(R.id.cancelbtn);

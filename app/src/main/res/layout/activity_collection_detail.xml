@@ -68,26 +68,50 @@
         android:visibility="gone" />
 
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="10dp"
-        android:visibility="gone"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/progressBar2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:background="@drawable/background2"
+            android:gravity="center"
+            android:layout_gravity="center|bottom"
+            android:orientation="horizontal">
+
+            <ProgressBar
+                style="?android:attr/progressBarStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:backgroundTint="#FF0000"
+                android:layout_marginRight="10dp"
+                android:indeterminateTint="#FF0000"
+                android:visibility="visible" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="loading more stories..."
+                android:textColor="@color/themeColor"
+                android:textSize="14dp" />
+        </LinearLayout>
 
 
+    </FrameLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar2"
-        style="?android:attr/progressBarStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="200dp"
-        android:backgroundTint="#FF0000"
-        android:visibility="visible" />
+
 
     <TextView
         android:id="@+id/message"
@@ -99,7 +123,6 @@
         android:textColor="@color/themeColor"
         android:textSize="20dp"
         android:visibility="gone" />
-
 
 
     <TextView
@@ -118,10 +141,10 @@
         android:layout_width="300dp"
         android:layout_height="70dp"
         android:layout_gravity="center"
-        android:gravity="center"
         android:layout_marginTop="100dp"
-        android:fontFamily="@font/robotoslab_regular"
         android:background="@drawable/hooverffext"
+        android:fontFamily="@font/robotoslab_regular"
+        android:gravity="center"
         android:text="Retry"
         android:textStyle="bold"
         android:visibility="gone" />

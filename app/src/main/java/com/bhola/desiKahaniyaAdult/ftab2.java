@@ -8,10 +8,13 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -39,12 +42,16 @@ public class ftab2 extends Fragment {
     List<String> storyName;
     AudioStory_Details_Adapter adapter2;
     StorageReference mStorageReference;
-    ProgressBar progressBar2;
-    RecyclerView recyclerView;
+    LinearLayout progressBar2;
     FirebaseAuth mAuth;
-String TAG="TAGA";
-    int currentPositonTime;
-
+    String TAG = "TAGA";
+    RecyclerView recyclerView;
+    LinearLayoutManager manager;
+    Boolean isScrolling = false;
+    int currentItems, totalItems, scrollOutItems;
+    String token = "";
+    int page = 1;
+    ArrayList<Object> collectionData;
     public ftab2() {
         // Required empty public constructor
     }
@@ -61,7 +68,9 @@ String TAG="TAGA";
         progressBar2 = view.findViewById(R.id.progressBar2);
         mStorageReference = FirebaseStorage.getInstance().getReference().child("audiostories");
         recyclerView = view.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        manager = new LinearLayoutManager(getActivity());
+        recyclerView.setLayoutManager(manager);
+        collectionData = new ArrayList<Object>();
 
         try {
             loadAudioDatabase(view);
@@ -78,30 +87,76 @@ String TAG="TAGA";
 
 
     private void loadAudioDatabase(View view) {
-        ArrayList<Object> collectionData = new ArrayList<Object>();
-        Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readAudioStories();
+        Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readAudioStories(page);
         try {
-            try {
-                while (cursor.moveToNext()) {
-                    if (cursor.getString(5).trim().length() != 0) {
-                        StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11),cursor.getInt(12),cursor.getString(13));
-                        collectionData.add(storyItemModel);
-                    }
+            while (cursor.moveToNext()) {
+                if (cursor.getString(5).trim().length() != 0) {
+                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+                    collectionData.add(storyItemModel);
                 }
-
-            } finally {
-                cursor.close();
             }
 
-        } catch (Exception ignored) {
-
+        } finally {
+            cursor.close();
         }
-
 
         adapter2 = new AudioStory_Details_Adapter(collectionData, getActivity());
         recyclerView.setAdapter(adapter2);
         progressBar2.setVisibility(View.GONE);
         adapter2.notifyDataSetChanged();
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
+                    isScrolling = true;
+                }
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                currentItems = manager.getChildCount();
+                totalItems = manager.getItemCount();
+                scrollOutItems = manager.findFirstVisibleItemPosition();
+
+                if (isScrolling && (currentItems + scrollOutItems == totalItems)) {
+                    isScrolling = false;
+                    getMoreDate();
+                }
+            }
+        });
+
+
+    }
+
+    private void getMoreDate() {
+        page = page + 1;
+        Log.d(TAG, "getMoreDate: " + page);
+        progressBar2.setVisibility(View.VISIBLE);
+
+
+        Cursor cursor = new DatabaseHelper(getActivity(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readAudioStories(page);
+        try {
+            while (cursor.moveToNext()) {
+                if (cursor.getString(5).trim().length() != 0) {
+                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+                    collectionData.add(storyItemModel);
+                }
+            }
+
+        } finally {
+            cursor.close();
+        }
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                adapter2.notifyDataSetChanged();
+                progressBar2.setVisibility(View.GONE);
+            }
+        }, 800);
 
 
     }
@@ -176,7 +231,6 @@ class AudioStory_Details_Adapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
         String filename = SplashScreen.decryption(storyItemModel.getTitle().replace("-", " ").trim());
         ((Story_ROW_viewHolder) holder).imageview.setImageResource(R.drawable.mp3);
-
 
 
         ((Story_ROW_viewHolder) holder).title.setText(filename);

@@ -6,7 +6,11 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +23,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -49,7 +57,7 @@ public class OfflineAudioStory extends AppCompatActivity {
 
     OfflineAudioAdapter adapter2;
     RecyclerView recyclerView;
-    ProgressBar progressBar2;
+    LinearLayout progressBar2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,20 +175,66 @@ public class OfflineAudioStory extends AppCompatActivity {
     }
 
     public void requestPermissions() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(OfflineAudioStory.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            Toast.makeText(OfflineAudioStory.this, "Please Give Permission to download file", Toast.LENGTH_SHORT).show();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Android is 11(R) and above
+            try {
+                Log.d(TAG, "requestPermissions: try");
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", this.getPackageName(), null);
+                intent.setData(uri);
+                storageActivityResultLauncher.launch(intent);
+            } catch (Exception e) {
+                Log.d(TAG, "requestPermissions: ", e);
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                storageActivityResultLauncher.launch(intent);
+
+            }
         } else {
-            ActivityCompat.requestPermissions(OfflineAudioStory.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+            //Android is below 11(R)
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(AudioPlayer.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+//                Toast.makeText(AudioPlayer.this, "Please Give Permission to download file", Toast.LENGTH_SHORT).show();
+//            } else {
+//                ActivityCompat.requestPermissions(AudioPlayer.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+//            }
         }
     }
 
+    private ActivityResultLauncher<Intent> storageActivityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        @Override
+        public void onActivityResult(ActivityResult result) {
+            //here we will handle result of intent
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                //Android is 11(R) and above
+                if (Environment.isExternalStorageManager()) {
+                    //Manage External storage permission is granted
+                    Log.d(TAG, "onActivityResult: " + "permission is granted");
+                    Toast.makeText(OfflineAudioStory.this, "Permission Granted", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    //Manage External storage permission is denied
+                    Log.d(TAG, "onActivityResult: " + "permission is denied");
+                    Toast.makeText(OfflineAudioStory.this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                //Android is below 11(R)
+
+            }
+        }
+    });
 
     private boolean checkPermissions() {
-        int result = ContextCompat.checkSelfPermission(OfflineAudioStory.this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (result == PackageManager.PERMISSION_GRANTED) {
-            return true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Android is 11(R) and above
+            return Environment.isExternalStorageManager();
         } else {
-            return false;
+            //Android is below 11(R)
+            int write = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int read = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            return write == PackageManager.PERMISSION_GRANTED && read == PackageManager.PERMISSION_GRANTED;
         }
     }
 
@@ -188,15 +242,24 @@ public class OfflineAudioStory extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        switch (requestCode) {
-            case 100:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == 100) {
+            if (grantResults.length > 0) {
+                boolean write = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                boolean read = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                if (write && read) {
+                    Log.d(TAG, "onActivityResult: " + "permission is granted");
                     Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+
                 } else {
                     Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "onActivityResult: " + "permission is Denied");
+
                 }
+            }
         }
+
     }
+
 
 }
 

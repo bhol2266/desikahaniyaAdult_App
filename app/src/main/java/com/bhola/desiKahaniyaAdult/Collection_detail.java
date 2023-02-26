@@ -8,10 +8,13 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -44,7 +47,7 @@ public class Collection_detail extends AppCompatActivity {
 
     private List<NativeAd> mNativeAds = new ArrayList<NativeAd>();
     private AdLoader adLoader;
-    ProgressBar progressBar2;
+    LinearLayout progressBar2;
     TextView check_Internet_Connection;
     Button retryBtn;
     String TAG = "taga";
@@ -55,11 +58,17 @@ public class Collection_detail extends AppCompatActivity {
     Context context;
     ImageView back, share_ap;
     private AdView mAdView;
-    RecyclerView recyclerView;
 
 
     InterstitialAd facebook_IntertitialAds;
     com.facebook.ads.AdView facebook_adView;
+
+    RecyclerView recyclerView;
+    LinearLayoutManager manager;
+    Boolean isScrolling = false;
+    int currentItems, totalItems, scrollOutItems;
+    String token = "";
+    int page = 1;
 
 
     @Override
@@ -117,7 +126,7 @@ public class Collection_detail extends AppCompatActivity {
             service.execute(new Runnable() {
                 @Override
                 public void run() {
-                    getDataFromDatabase();
+                    getMoreDateFromDatabase();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -126,8 +135,6 @@ public class Collection_detail extends AppCompatActivity {
                     });
                 }
             });
-
-
 
 
         } else {
@@ -156,18 +163,69 @@ public class Collection_detail extends AppCompatActivity {
         recyclerView.setVisibility(View.VISIBLE);
         progressBar2.setVisibility(View.GONE);
 
+        manager = new LinearLayoutManager(this);
 
         adapter2 = new Collection_Details_ADAPTER(collectonData, context, "StoryItems", Ads_State, title_category);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(manager);
         recyclerView.setAdapter(adapter2);
         adapter2.notifyDataSetChanged();
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
+                    isScrolling = true;
+                }
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                currentItems = manager.getChildCount();
+                totalItems = manager.getItemCount();
+                scrollOutItems = manager.findFirstVisibleItemPosition();
+
+                if (isScrolling && (currentItems + scrollOutItems == totalItems)) {
+                    isScrolling = false;
+                    getMoreDate();
+                }
+            }
+        });
+
+    }
+
+    private void getMoreDate() {
+        page = page + 1;
+        Log.d(TAG, "getMoreDate: " + page);
+        progressBar2.setVisibility(View.VISIBLE);
+
+
+        Cursor cursor = new DatabaseHelper(Collection_detail.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href, page);
+        try {
+            while (cursor.moveToNext()) {
+                StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+                collectonData.add(storyItemModel);
+            }
+
+        } finally {
+            cursor.close();
+        }
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                adapter2.notifyDataSetChanged();
+                progressBar2.setVisibility(View.GONE);
+            }
+        }, 800);
+
 
     }
 
 
-    private void getDataFromDatabase() {
+    private void getMoreDateFromDatabase() {
 
-        Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href);
+        Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href, 1);
         try {
             try {
                 while (cursor.moveToNext()) {

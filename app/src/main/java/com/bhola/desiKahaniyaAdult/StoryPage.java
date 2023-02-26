@@ -5,10 +5,13 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Paint;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
+import android.text.SpannableString;
+import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class StoryPage extends AppCompatActivity {
     ImageView back, play_audio;
@@ -68,7 +73,8 @@ public class StoryPage extends AppCompatActivity {
     com.facebook.ads.AdView facebook_adView;
 
     String TAG = "TAGA";
-
+    LinearLayout storiesInsideparagraphLayout;
+    LinearLayout relatedStoriesLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,8 +91,14 @@ public class StoryPage extends AppCompatActivity {
 
         Intents_and_InitViews();
         actionBar();
-        fetchStory();
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                fetchStory();
 
+            }
+        });
         checkfavourite(DB_TABLENUMBER);
 
 
@@ -206,6 +218,8 @@ public class StoryPage extends AppCompatActivity {
                     fetchStoryAPI();
                     return;
                 }
+                storiesInsideparagraphLayout.setVisibility(View.VISIBLE);
+                relatedStoriesLayout.setVisibility(View.VISIBLE);
                 storyText.setText(story.toString().trim().replaceAll("\\/", ""));
             }
 
@@ -227,6 +241,8 @@ public class StoryPage extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject(response);
                     String description = jsonObject.getString("data");
                     storyText.setText(description.toString().trim().replaceAll("\\/", ""));
+                    storiesInsideparagraphLayout.setVisibility(View.VISIBLE);
+                    relatedStoriesLayout.setVisibility(View.VISIBLE);
                     new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updateStoryParagraph(title, description);
 
                 } catch (Exception e) {
@@ -512,11 +528,13 @@ public class StoryPage extends AppCompatActivity {
 
 
         List<String> storiesInsideParagraphList = new ArrayList<String>(Arrays.asList(storiesInsideParagraph.split(",")));
-        LinearLayout storiesInsideparagraphLayout = findViewById(R.id.storiesInsideparagraph);
+         storiesInsideparagraphLayout = findViewById(R.id.storiesInsideparagraph);
         for (int i = 0; i < storiesInsideParagraphList.size(); i++) {
             String tagKey = storiesInsideParagraphList.get(i).trim();
             View view = getLayoutInflater().inflate(R.layout.tag, null);
             TextView tag = view.findViewById(R.id.tag);
+            tag.setPaintFlags(tag.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+
             tag.setText(i + 1 + ". " + tagKey);
             tag.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -544,13 +562,15 @@ public class StoryPage extends AppCompatActivity {
 
 
         List<String> myList = new ArrayList<String>(Arrays.asList(relatedStories.split(",")));
-        LinearLayout relatedStoriesLayout = findViewById(R.id.relatedStoriesLayout);
+         relatedStoriesLayout = findViewById(R.id.relatedStoriesLayout);
         for (int i = 0; i < myList.size(); i++) {
 
             String tagKey = myList.get(i).trim();
 
             View view = getLayoutInflater().inflate(R.layout.tag, null);
             TextView relatedStoryText = view.findViewById(R.id.tag);
+            relatedStoryText.setPaintFlags(relatedStoryText.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+
             relatedStoryText.setText(i + 1 + ". " + tagKey);
 
             relatedStoryText.setOnClickListener(new View.OnClickListener() {
