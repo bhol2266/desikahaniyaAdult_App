@@ -32,8 +32,8 @@ import java.util.List;
 public class Download_Detail extends AppCompatActivity {
 
 
-    String  Ads_State;
-    List<ModelData_forFavourites> collectonData;
+    String Ads_State;
+    List<StoryItemModel> collectonData;
     public static Download_story_ADAPTER adapter2;
     String message;
     ImageView back;
@@ -51,7 +51,7 @@ public class Download_Detail extends AppCompatActivity {
 
         try {
             if (SplashScreen.Ads_State.equals("active")) {
-                showAds(SplashScreen.Ad_Network_Name,this);
+                showAds(SplashScreen.Ad_Network_Name, this);
             }
         } catch (Exception e) {
 
@@ -62,14 +62,10 @@ public class Download_Detail extends AppCompatActivity {
 
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        collectonData = new ArrayList<ModelData_forFavourites>();
+        collectonData = new ArrayList<StoryItemModel>();
 
+        getDataFromDatabase();
 
-        String[] Table_Names = {"Collection1", "Collection2", "Collection3", "Collection4", "Collection5", "Collection6","Collection7","Collection8","Collection9","Collection10"};
-
-        for (int i = 0; i < Table_Names.length; i++) {
-            getDataFromDatabase(Table_Names[i]);
-        }
 
         checkCollectionDataEmpty();
 
@@ -84,19 +80,17 @@ public class Download_Detail extends AppCompatActivity {
     private void showAds(String Ad_Network_Name, Context mContext) {
 
 
-        if(Ad_Network_Name.equals("admob")){
+        if (Ad_Network_Name.equals("admob")) {
             mAdView = findViewById(R.id.adView);
             ADS_ADMOB.BannerAd(this, mAdView);
-        }
+        } else {
 
-        else{
-
-            LinearLayout facebook_bannerAd_layput,facebook_bannerAd_layput_2;
-            facebook_bannerAd_layput=findViewById(R.id.banner_container);
+            LinearLayout facebook_bannerAd_layput, facebook_bannerAd_layput_2;
+            facebook_bannerAd_layput = findViewById(R.id.banner_container);
 
 
 //
-            ADS_FACEBOOK.bannerAds(mContext,facebook_adView,facebook_bannerAd_layput,getString(R.string.Facebbok_BannerAdUnit_1));
+            ADS_FACEBOOK.bannerAds(mContext, facebook_adView, facebook_bannerAd_layput, getString(R.string.Facebbok_BannerAdUnit_1));
 
         }
 
@@ -104,26 +98,17 @@ public class Download_Detail extends AppCompatActivity {
     }
 
 
-
-    private void getDataFromDatabase(String Table_Name) {
-
-
-        Cursor cursor = new DatabaseHelper2(Download_Detail.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, Table_Name).readalldata();
+    private void getDataFromDatabase() {
 
 
-        while (cursor.moveToNext()) {
-            int id = cursor.getInt(0);
-            String Date = cursor.getString(1);
-            String Story = cursor.getString(2);
-            String Title = cursor.getString(3);
-            int Liked = cursor.getInt(4);
-
-            if (Liked == 1) {
-                ModelData_forFavourites modelData_forFavourites = new ModelData_forFavourites(id, Date, Story, Title, Liked);
-                collectonData.add(modelData_forFavourites);
+        Cursor cursor = new DatabaseHelper(Download_Detail.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readLikedStories();
+        try {
+            while (cursor.moveToNext()) {
+                StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13), cursor.getInt(14));
+                collectonData.add(storyItemModel);
             }
-        }
-        if (cursor != null) {
+
+        } finally {
             cursor.close();
         }
     }
@@ -156,8 +141,6 @@ public class Download_Detail extends AppCompatActivity {
     }
 
 
-
-
     private void initViews() {
         emptyView = findViewById(R.id.emptyView);
         recyclerView = findViewById(R.id.recyclerView_Downloads);
@@ -166,15 +149,15 @@ public class Download_Detail extends AppCompatActivity {
 }
 
 
- class Download_story_ADAPTER extends RecyclerView.Adapter<Download_story_ADAPTER.viewholder> {
-    List<ModelData_forFavourites> collectonData;
+class Download_story_ADAPTER extends RecyclerView.Adapter<Download_story_ADAPTER.viewholder> {
+    List<StoryItemModel> collectonData;
     DatabaseReference mref, mref_download;
 
     String message;
     AlertDialog dialog;
     String Ads_State;
 
-    public Download_story_ADAPTER(List<ModelData_forFavourites> collectonData, String message, String ads_State) {
+    public Download_story_ADAPTER(List<StoryItemModel> collectonData, String message, String ads_State) {
         this.collectonData = collectonData;
         this.message = message;
         this.Ads_State = ads_State;
@@ -193,10 +176,10 @@ public class Download_Detail extends AppCompatActivity {
 
     @Override
     public void onBindViewHolder(@NonNull viewholder holder, @SuppressLint("RecyclerView") int position) {
-        ModelData_forFavourites modelData_forFavourites = collectonData.get(position);
-        holder.title.setText(modelData_forFavourites.getTitle());
-        holder.date.setText(modelData_forFavourites.getDate());
 
+        StoryItemModel storyItemModel = (StoryItemModel) collectonData.get(position);
+        holder.title.setText(SplashScreen.decryption(storyItemModel.getTitle()));
+        holder.date.setText(storyItemModel.getDate());
 
 
         holder.recyclerview.setOnLongClickListener(new View.OnLongClickListener() {
@@ -219,29 +202,9 @@ public class Download_Detail extends AppCompatActivity {
                         final MediaPlayer mp = MediaPlayer.create(v.getContext(), R.raw.sound);
                         mp.start();
 
-                        String[] Table_Names={"Collection1", "Collection2", "Collection3", "Collection4", "Collection5", "Collection6","Collection7","Collection8","Collection9","Collection10"};
+                        String res = new DatabaseHelper(v.getContext(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updaterecord(SplashScreen.decryption(storyItemModel.getTitle()), 0);
+                        Toast.makeText(v.getContext(), "Removed from Offline Stories"+res, Toast.LENGTH_SHORT).show();
 
-                        for (int i = 0; i < Table_Names.length; i++) {
-                            Cursor cursor = new DatabaseHelper2(v.getContext(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, Table_Names[i]).readalldata();
-
-                            while (cursor.moveToNext()) {
-                                String Title = cursor.getString(3);
-                                if (Title.equals(modelData_forFavourites.getTitle())) {
-                                    String res = new DatabaseHelper2(v.getContext(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, Table_Names[i]).updaterecord(modelData_forFavourites.getId(), 0);
-                                    break;
-
-                                }
-                            }
-
-                            if (cursor != null) {
-                                cursor.close();
-                            }
-
-
-                        }
-
-
-                        Toast.makeText(v.getContext(), "Removed From Offline Stories ", Toast.LENGTH_SHORT).show();
                         collectonData.remove(position);
                         Download_Detail.adapter2.notifyDataSetChanged();
                         dialog.dismiss();
@@ -266,16 +229,21 @@ public class Download_Detail extends AppCompatActivity {
             }
         });
 
+
+
         holder.recyclerview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(v.getContext(), Download_StoryPage.class);
-                intent.putExtra("Story", modelData_forFavourites.getHeading());
-                intent.putExtra("Title", modelData_forFavourites.getTitle());
+                Intent intent = new Intent(v.getContext(), StoryPage.class);
+                intent.putExtra("category",  storyItemModel.getCategory());
+                intent.putExtra("title", SplashScreen.decryption(storyItemModel.getTitle()));
+                intent.putExtra("date", storyItemModel.getDate());
+                intent.putExtra("href", SplashScreen.decryption(storyItemModel.getHref()));
+                intent.putExtra("relatedStories", storyItemModel.getRelatedStories());
+                intent.putExtra("storiesInsideParagraph", storyItemModel.getStoriesInsideParagraph());
 
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 v.getContext().startActivity(intent);
-
             }
         });
 

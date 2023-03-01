@@ -39,6 +39,7 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DatabaseReference;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -61,7 +62,6 @@ public class StoryPage extends AppCompatActivity {
     boolean clicked = false;
     FloatingActionButton add, share, copy, textsixe, favourite_button;
     String collection;
-    String DB_TABLENUMBER;
     int _id;
     String android_id;
     SeekBar seekBar;
@@ -75,6 +75,7 @@ public class StoryPage extends AppCompatActivity {
     String TAG = "TAGA";
     LinearLayout storiesInsideparagraphLayout;
     LinearLayout relatedStoriesLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,7 +100,8 @@ public class StoryPage extends AppCompatActivity {
 
             }
         });
-        checkfavourite(DB_TABLENUMBER);
+        checkfavourite();
+        updateStoryread(); //update the story as read in DB
 
 
         share.setOnClickListener(new View.OnClickListener() {
@@ -124,7 +126,7 @@ public class StoryPage extends AppCompatActivity {
                 final MediaPlayer mp = MediaPlayer.create(v.getContext(), R.raw.sound);
                 mp.start();
 
-                Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readsingleRow(title);
+                Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(title);
                 try {
                     if (cursor.getCount() > 0) {
                         cursor.moveToFirst();
@@ -132,13 +134,13 @@ public class StoryPage extends AppCompatActivity {
 
                         if (liked == 0) {
                             favourite_button.setImageResource(R.drawable.favourite_active);
-                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(title, 1);
+                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updaterecord(title, 1);
                             Toast.makeText(StoryPage.this, "Downloaded to Offline Stories", Toast.LENGTH_SHORT).show();
 
                         } else {
 
                             favourite_button.setImageResource(R.drawable.favourite_inactive);
-                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).updaterecord(title, 0);
+                            String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updaterecord(title, 0);
                             Toast.makeText(StoryPage.this, "Removed from Offline Stories", Toast.LENGTH_SHORT).show();
                         }
                     }
@@ -207,6 +209,10 @@ public class StoryPage extends AppCompatActivity {
 
     }
 
+    private void updateStoryread() {
+        String res = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updateStoryRead(title, 1);
+    }
+
     private void fetchStory() {
 
         Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(title);
@@ -231,7 +237,6 @@ public class StoryPage extends AppCompatActivity {
     }
 
     private void fetchStoryAPI() {
-
         String API_URL = "https://clownfish-app-jn7w9.ondigitalocean.app/storiesDetails";
         RequestQueue requestQueue = Volley.newRequestQueue(StoryPage.this);
         StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
@@ -239,13 +244,22 @@ public class StoryPage extends AppCompatActivity {
             public void onResponse(String response) {
                 try {
                     JSONObject jsonObject = new JSONObject(response);
-                    String description = jsonObject.getString("data");
+                    JSONObject json_obj = jsonObject.getJSONObject("data");
+
+                    JSONArray storyArray = json_obj.getJSONArray("description");
+                    ArrayList<String> storyArrayList = new ArrayList();
+                    for (int j = 0; j < storyArray.length(); j++) {
+                        storyArrayList.add(storyArray.getString(j));
+                    }
+                    String description = String.join("\n\n", storyArrayList);
+
                     storyText.setText(description.toString().trim().replaceAll("\\/", ""));
                     storiesInsideparagraphLayout.setVisibility(View.VISIBLE);
                     relatedStoriesLayout.setVisibility(View.VISIBLE);
                     new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updateStoryParagraph(title, description);
 
                 } catch (Exception e) {
+                    Log.d(TAG, "onResponse: "+e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -296,6 +310,7 @@ public class StoryPage extends AppCompatActivity {
 
     private void Intents_and_InitViews() {
 
+
 //Intents
         title = getIntent().getStringExtra("title");
         relatedStories = getIntent().getStringExtra("relatedStories");
@@ -303,7 +318,6 @@ public class StoryPage extends AppCompatActivity {
         href = getIntent().getStringExtra("href");
         heading = getIntent().getStringExtra("Story");
         date = getIntent().getStringExtra("date");
-        DB_TABLENUMBER = getIntent().getStringExtra("DB_TABLENUMBER");
         _id = getIntent().getIntExtra("_id", 0);
 
 //InitViews
@@ -328,9 +342,9 @@ public class StoryPage extends AppCompatActivity {
     }
 
 
-    private void checkfavourite(String DB_TABLENUMBER) {
+    private void checkfavourite( ) {
 
-        Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, DB_TABLENUMBER).readsingleRow(title);
+        Cursor cursor = new DatabaseHelper(StoryPage.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(title);
         if (cursor.getCount() > 0) {
             cursor.moveToFirst();
             int liked = cursor.getInt(11);
@@ -528,12 +542,12 @@ public class StoryPage extends AppCompatActivity {
 
 
         List<String> storiesInsideParagraphList = new ArrayList<String>(Arrays.asList(storiesInsideParagraph.split(",")));
-         storiesInsideparagraphLayout = findViewById(R.id.storiesInsideparagraph);
+        storiesInsideparagraphLayout = findViewById(R.id.storiesInsideparagraph);
         for (int i = 0; i < storiesInsideParagraphList.size(); i++) {
             String tagKey = storiesInsideParagraphList.get(i).trim();
             View view = getLayoutInflater().inflate(R.layout.tag, null);
             TextView tag = view.findViewById(R.id.tag);
-            tag.setPaintFlags(tag.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+            tag.setPaintFlags(tag.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
 
             tag.setText(i + 1 + ". " + tagKey);
             tag.setOnClickListener(new View.OnClickListener() {
@@ -542,7 +556,8 @@ public class StoryPage extends AppCompatActivity {
 
                     StoryItemModel storyItemModel = getDataFROM_DB(tagKey);
                     if (storyItemModel == null) {
-                        Toast.makeText(StoryPage.this, "Story not found", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onClick: "+"Story not found");
+                        getStoryDetailsFromAPI(tagKey);
                         return;
                     }
                     Intent intent = new Intent(v.getContext(), StoryPage.class);
@@ -562,14 +577,14 @@ public class StoryPage extends AppCompatActivity {
 
 
         List<String> myList = new ArrayList<String>(Arrays.asList(relatedStories.split(",")));
-         relatedStoriesLayout = findViewById(R.id.relatedStoriesLayout);
+        relatedStoriesLayout = findViewById(R.id.relatedStoriesLayout);
         for (int i = 0; i < myList.size(); i++) {
 
             String tagKey = myList.get(i).trim();
 
             View view = getLayoutInflater().inflate(R.layout.tag, null);
             TextView relatedStoryText = view.findViewById(R.id.tag);
-            relatedStoryText.setPaintFlags(relatedStoryText.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+            relatedStoryText.setPaintFlags(relatedStoryText.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
 
             relatedStoryText.setText(i + 1 + ". " + tagKey);
 
@@ -578,7 +593,7 @@ public class StoryPage extends AppCompatActivity {
                 public void onClick(View v) {
                     StoryItemModel storyItemModel = getDataFROM_DB(tagKey);
                     if (storyItemModel == null) {
-                        Toast.makeText(StoryPage.this, "Story not found", Toast.LENGTH_SHORT).show();
+                        getStoryDetailsFromAPI(tagKey);
                         return;
                     }
                     Intent intent = new Intent(v.getContext(), StoryPage.class);
@@ -597,6 +612,130 @@ public class StoryPage extends AppCompatActivity {
         }
     }
 
+
+    private void getStoryDetailsFromAPI(String story_title) {
+
+        Toast.makeText(this, "fetching story...", Toast.LENGTH_SHORT).show();
+        String API_URL = "https://clownfish-app-jn7w9.ondigitalocean.app/storiesDetailsByTitle";
+        RequestQueue requestQueue = Volley.newRequestQueue(StoryPage.this);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    boolean success = jsonObject.getBoolean("success");
+                    if (!success) {
+                        Toast.makeText(StoryPage.this, "Story not found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    JSONObject json_obj = jsonObject.getJSONObject("data");
+                    HashMap<String, String> m_li = new HashMap<String, String>();
+
+                    String Title = json_obj.getString("Title");
+                    String href = json_obj.getString("href");
+                    String date = json_obj.getString("date");
+                    String views = json_obj.getString("views");
+                    int completeDate = json_obj.getInt("completeDate");
+                    String audiolink = json_obj.getString("audiolink");
+
+
+                    JSONObject categoryObject = json_obj.getJSONObject("category");
+                    String category = categoryObject.getString("title");
+
+                    JSONArray storyArray = json_obj.getJSONArray("description");
+                    ArrayList<String> storyArrayList = new ArrayList();
+                    for (int j = 0; j < storyArray.length(); j++) {
+                        storyArrayList.add(storyArray.getString(j));
+                    }
+                    String description = String.join("\n\n", storyArrayList);
+
+
+                    JSONArray tagsArray = json_obj.getJSONArray("tagsArray");
+                    ArrayList<String> tagsList = new ArrayList();
+                    for (int j = 0; j < tagsArray.length(); j++) {
+                        tagsList.add(tagsArray.getString(j));
+                    }
+                    String tags = String.join(", ", tagsList);
+
+
+                    JSONArray relatedStoriesLinks_Array = json_obj.getJSONArray("relatedStoriesLinks");
+                    ArrayList<String> relatedStoriesList = new ArrayList();
+                    for (int j = 0; j < relatedStoriesLinks_Array.length(); j++) {
+                        JSONObject relatedStoriesLinksObject = (JSONObject) relatedStoriesLinks_Array.get(j);
+                        relatedStoriesList.add(relatedStoriesLinksObject.getString("title"));
+                    }
+                    String relatedStories = String.join(", ", relatedStoriesList);
+
+                    JSONArray storiesInsideParagraph_Array = json_obj.getJSONArray("storiesLink_insideParagrapgh");
+                    ArrayList<String> storiesInsideParagraphList = new ArrayList();
+                    for (int j = 0; j < storiesInsideParagraph_Array.length(); j++) {
+                        JSONObject obj = (JSONObject) storiesInsideParagraph_Array.get(j);
+                        storiesInsideParagraphList.add(obj.getString("title"));
+                    }
+                    String storiesInsideParagraph = String.join(", ", storiesInsideParagraphList);
+
+
+                    //Add your values in your `ArrayList` as below:
+                    m_li.put("Title", Title);
+                    m_li.put("href", href);
+                    m_li.put("date", date);
+                    m_li.put("views", views);
+                    m_li.put("description", description.substring(0, 100));
+                    m_li.put("story", description);
+                    m_li.put("audiolink", audiolink);
+                    m_li.put("category", category);
+                    m_li.put("tags", tags);
+                    m_li.put("relatedStories", relatedStories);
+                    m_li.put("completeDate", String.valueOf(completeDate));
+                    m_li.put("storiesInsideParagraph", storiesInsideParagraph);
+
+
+                    DatabaseHelper insertRecord = new DatabaseHelper(getApplicationContext(), SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems");
+                    String res = insertRecord.addstories(m_li);
+                    Log.d(TAG, "INSERT DATA: "+res +" "+ story_title.trim());
+
+                    Intent intent = new Intent(StoryPage.this, StoryPage.class);
+                    intent.putExtra("category", category);
+                    intent.putExtra("title", Title);
+                    intent.putExtra("date", date);
+                    intent.putExtra("href", href);
+                    intent.putExtra("relatedStories", relatedStories);
+                    intent.putExtra("storiesInsideParagraph", storiesInsideParagraph);
+
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    StoryPage.this.startActivity(intent);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d(TAG, "onErrorResponse: " + error.getMessage());
+                Toast.makeText(StoryPage.this, "something went wrong", Toast.LENGTH_SHORT).show();
+
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("Title", story_title);
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("Content-Type", "application/x-www-form-urlencoded");
+                return params;
+            }
+        };
+
+        requestQueue.add(stringRequest);
+    }
+
+
     private StoryItemModel getDataFROM_DB(String Title) {
         Cursor cursor = new DatabaseHelper(this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readsingleRow(Title);
 
@@ -605,7 +744,7 @@ public class StoryPage extends AppCompatActivity {
         }
         try {
             cursor.moveToFirst();
-            StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+            StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13), cursor.getInt(14));
 
             return storyItemModel;
         } finally {

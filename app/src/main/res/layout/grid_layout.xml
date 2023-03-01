@@ -79,7 +79,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
                         android:maxLines="1"
-                        android:text="99,999"
+                        android:text=""
                         android:textSize="13dp" />
 
                 </LinearLayout>

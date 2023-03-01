@@ -35,9 +35,7 @@
         <activity
             android:name=".OfflineAudioStory"
             android:exported="false" />
-        <activity
-            android:name=".Download_StoryPage"
-            android:hardwareAccelerated="true" />
+
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

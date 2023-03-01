@@ -3,6 +3,7 @@ package com.bhola.desiKahaniyaAdult;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -14,25 +15,37 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class admin_panel extends AppCompatActivity {
     public static int counter = 0;
 
     DatabaseReference mref, notificationMref;
-    TextView Users_Counters;
     EditText title_story, pragraphofstory, date, image_url;
     Button selectStory, insertBTN, Refer_App_url_BTN, STory_Switch_Active_BTN;
     Switch switch_Exit_Nav, switch_Activate_Ads, switch_Sex_Story;
     Button Ad_Network;
     static String uncensored_title = "";
+    private String TAG="TAGA";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,25 +89,29 @@ public class admin_panel extends AppCompatActivity {
         selectStory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> title = new ArrayList<>();
-                List<String> paragraph = new ArrayList<>();
 
-                for (int i = 1; i <= 6; i++) {
-                    try {
-                        Cursor cursor = new DatabaseHelper(admin_panel.this, "MCB_Story", SplashScreen.DB_VERSION, "Collection" + i).readalldata();
-                        while (cursor.moveToNext()) {
-                            title.add(cursor.getString(3));
-                            paragraph.add(cursor.getString(2));
-                        }
-                    } catch (Exception e) {
+                List<StoryItemModel> collectonData = new ArrayList<StoryItemModel>();
 
+                Cursor cursor = new DatabaseHelper(admin_panel.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readalldata();
+                try {
+                    while (cursor.moveToNext()) {
+                        StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13), cursor.getInt(14));
+                        collectonData.add(storyItemModel);
                     }
+
+                } finally {
+                    cursor.close();
                 }
-                int randomNum = (int) (Math.random() * (title.size() - 1 - 0 + 1) + 0);
-                pragraphofstory.setText(decryption(paragraph.get(randomNum)));
-                title_story.setText(title.get(randomNum));
-                date.setText("2022-04-19");
-                uncensored_title = title.get(randomNum);
+
+                int randomNum = (int) (Math.random() * (collectonData.size() - 1 - 0 + 1) + 0);
+                StoryItemModel storyItemModel=collectonData.get(randomNum);
+                title_story.setText(decryption(storyItemModel.getTitle()));
+                date.setText(storyItemModel.getDate());
+                if (storyItemModel.getStory().trim().length() == 0) {
+                    fetchStoryAPI(storyItemModel.getTitle(),decryption(storyItemModel.getHref()));
+                }
+
+                uncensored_title =decryption(storyItemModel.getTitle());
             }
         });
 
@@ -337,5 +354,55 @@ public class admin_panel extends AppCompatActivity {
         }
         return decryptedText;
     }
+
+    private void fetchStoryAPI(String title,String href) {
+        String API_URL = "https://clownfish-app-jn7w9.ondigitalocean.app/storiesDetails";
+        RequestQueue requestQueue = Volley.newRequestQueue(admin_panel.this);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONObject json_obj = jsonObject.getJSONObject("data");
+
+                    JSONArray storyArray = json_obj.getJSONArray("description");
+                    ArrayList<String> storyArrayList = new ArrayList();
+                    for (int j = 0; j < storyArray.length(); j++) {
+                        storyArrayList.add(storyArray.getString(j));
+                    }
+                    String description = String.join("\n\n", storyArrayList);
+                    pragraphofstory.setText(description.toString().trim().replaceAll("\\/", ""));
+
+                    new DatabaseHelper(admin_panel.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").updateStoryParagraph(title, description);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("TAGA", "onErrorResponse: " + error.getMessage());
+
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("href", href);
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("Content-Type", "application/x-www-form-urlencoded");
+                return params;
+            }
+        };
+
+        requestQueue.add(stringRequest);
+    }
+
 
 }

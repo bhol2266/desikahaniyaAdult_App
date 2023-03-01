@@ -38,7 +38,7 @@ public class Notification_Story_Detail extends AppCompatActivity {
     String title1;
     Context context;
     ImageView back,share_ap;
-    ProgressBar progressBar2;
+    LinearLayout progressBar2;
 
 
 

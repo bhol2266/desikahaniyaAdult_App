@@ -106,6 +106,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
+    public Cursor readLikedStories() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.query("StoryItems", null, "like=?", new String[]{String.valueOf(1)}, null, null, "completeDate DESC", null);
+        return cursor;
+    }
+
     public int readLatestStoryDate() {
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.query("StoryItems", null, null, null, null, null, "completeDate DESC", "1");
@@ -123,6 +129,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return cursor;
 
     }
+
+
 
     public Cursor readAudioStories(int page) {
         int skip = (page - 1) * 15;
@@ -158,6 +166,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("like", like_value);
+
+        float res = db.update("StoryItems", cv, "Title = ?", new String[]{encryption(title)});
+        if (res == -1)
+            return "Failed";
+        else
+            return "Liked";
+
+    }
+
+    public String updateStoryRead(String title, int read_value) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("read", read_value);
 
         float res = db.update("StoryItems", cv, "Title = ?", new String[]{encryption(title)});
         if (res == -1)

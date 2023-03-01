@@ -1,8 +1,10 @@
 package com.bhola.desiKahaniyaAdult;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
@@ -203,7 +205,7 @@ public class Collection_detail extends AppCompatActivity {
         Cursor cursor = new DatabaseHelper(Collection_detail.this, SplashScreen.DB_NAME, SplashScreen.DB_VERSION, "StoryItems").readaDataByCategory(href, page);
         try {
             while (cursor.moveToNext()) {
-                StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+                StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13), cursor.getInt(14));
                 collectonData.add(storyItemModel);
             }
 
@@ -229,7 +231,7 @@ public class Collection_detail extends AppCompatActivity {
         try {
             try {
                 while (cursor.moveToNext()) {
-                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13));
+                    StoryItemModel storyItemModel = new StoryItemModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getString(8), cursor.getInt(9), cursor.getString(10), cursor.getInt(11), cursor.getInt(12), cursor.getString(13), cursor.getInt(14));
                     collectonData.add(storyItemModel);
                 }
 
@@ -398,6 +400,7 @@ class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewH
         return new Collection_Details_ADAPTER.Story_ROW_viewHolder(Story_ROW_viewHolder);
     }
 
+    @SuppressLint("ResourceAsColor")
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 
@@ -407,6 +410,12 @@ class Collection_Details_ADAPTER extends RecyclerView.Adapter<RecyclerView.ViewH
         storyRowViewHolder.title.setText(SplashScreen.decryption(storyItemModel.getTitle()));
         storyRowViewHolder.date.setText(storyItemModel.getDate());
         storyRowViewHolder.views.setText(storyItemModel.getViews());
+        if (storyItemModel.getRead() == 1) {
+            //story already read so change text color
+            storyRowViewHolder.title.setTextColor(Color.parseColor("#d23610"));
+        } else {
+            storyRowViewHolder.title.setTextColor(Color.parseColor("#BF171717"));
+        }
 
 
         storyRowViewHolder.recyclerview.setOnClickListener(new View.OnClickListener() {
